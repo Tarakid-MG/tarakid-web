@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold: #efbf04;
+  --color-navy: #202A44;
+  --color-beige: #e6e5e6;
+  --color-yellow: #FFD400;
+  --color-orange: #F77F00;
+  --color-lightBlue: #4CC9F0;
+  --color-blue: #219EBC;
+  --color-deepBlue: #1D6FA3;
+  --color-turquoise: #40E0D0;
+  --color-teal: #008080;
+}
+
+:root {
+  font-family: "Roboto", sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
