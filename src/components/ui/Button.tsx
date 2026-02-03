@@ -1,7 +1,8 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverse';
+    size?: 'sm' | 'md' | 'lg';
     fullWidth?: boolean;
     loading?: boolean;
     children: React.ReactNode;
@@ -9,6 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button: React.FC<ButtonProps> = ({
     variant = 'primary',
+    size = 'md',
     fullWidth = false,
     loading = false,
     children,
@@ -16,17 +18,25 @@ export const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyles = "py-4 px-6 rounded-2xl font-black text-lg transition-all border-2 flex items-center justify-center space-x-2 active:translate-y-[4px] disabled:opacity-70 disabled:cursor-not-allowed";
+    const baseStyles = "rounded-2xl font-black transition-all border-2 flex items-center justify-center space-x-2 active:translate-y-[4px] disabled:opacity-70 disabled:cursor-not-allowed";
+
+    const sizes = {
+        sm: "py-2 px-4 text-sm",
+        md: "py-3 px-6 text-base",
+        lg: "py-4 px-8 text-lg"
+    };
 
     const variants = {
         primary: "bg-orange text-white shadow-[0_4px_0_#c96500] hover:shadow-[0_2px_0_#c96500] hover:translate-y-[2px] active:shadow-none border-[#c96500]",
         secondary: "bg-blue text-white shadow-[0_4px_0_#1a7fa3] hover:shadow-[0_2px_0_#1a7fa3] hover:translate-y-[2px] active:shadow-none border-[#1a7fa3]",
-        outline: "bg-transparent border-beige text-navy hover:bg-beige/20 hover:border-navy/20 active:translate-y-[2px]"
+        outline: "bg-transparent border-beige text-navy hover:bg-beige/20 hover:border-navy/20 active:translate-y-[2px]",
+        ghost: "bg-transparent border-transparent text-navy hover:bg-slate-100 active:translate-y-[2px]",
+        inverse: "bg-white text-blue shadow-lg hover:bg-blue-50 border-white"
     };
 
     return (
         <button
-            className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
+            className={`${baseStyles} ${sizes[size]} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
             disabled={disabled || loading}
             {...props}
         >

@@ -18,7 +18,7 @@ const DurationStep: React.FC<QuizStepProps> = ({ data, updateData, onNext }) => 
                     <button
                         key={val}
                         onClick={() => { updateData({ learningDuration: val }); onNext(); }}
-                        className={`p-6 rounded-[2rem] border-4 text-center transition-all ${data.learningDuration === val
+                        className={`p-6 rounded-4xl border-4 text-center transition-all ${data.learningDuration === val
                                 ? 'border-blue bg-blue/5 shadow-xl scale-[1.02]'
                                 : 'border-beige hover:border-blue/30'
                             }`}

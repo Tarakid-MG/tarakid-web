@@ -16,7 +16,7 @@ const MotherTongueStep: React.FC<QuizStepProps> = ({ data, updateData, onNext })
                     <button
                         key={opt.val}
                         onClick={() => { updateData({ motherTongueProficiency: opt.val as MotherTongueLevel }); onNext(); }}
-                        className={`p-6 rounded-[2rem] border-4 text-left transition-all ${data.motherTongueProficiency === opt.val
+                        className={`p-6 rounded-4xl border-4 text-left transition-all ${data.motherTongueProficiency === opt.val
                                 ? 'border-orange bg-orange/5 shadow-xl scale-[1.02]'
                                 : 'border-beige hover:border-orange/30'
                             }`}

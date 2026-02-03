@@ -17,7 +17,7 @@ const EnglishSpeakingStep: React.FC<QuizStepProps> = ({ data, updateData, onNext
                     <button
                         key={opt.val}
                         onClick={() => { updateData({ englishSpeakingLevel: opt.val as EnglishLevel }); onNext(); }}
-                        className={`p-5 rounded-[2rem] border-4 text-left transition-all ${data.englishSpeakingLevel === opt.val
+                        className={`p-5 rounded-4xl border-4 text-left transition-all ${data.englishSpeakingLevel === opt.val
                                 ? 'border-orange bg-orange/5 shadow-xl scale-[1.02]'
                                 : 'border-beige hover:border-orange/30'
                             }`}

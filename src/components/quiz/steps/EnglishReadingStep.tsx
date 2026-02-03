@@ -17,7 +17,7 @@ const EnglishReadingStep: React.FC<QuizStepProps> = ({ data, updateData, onNext 
                     <button
                         key={opt.val}
                         onClick={() => { updateData({ englishReadingLevel: opt.val as EnglishLevel }); onNext(); }}
-                        className={`p-5 rounded-[2rem] border-4 text-left transition-all ${data.englishReadingLevel === opt.val
+                        className={`p-5 rounded-4xl border-4 text-left transition-all ${data.englishReadingLevel === opt.val
                                 ? 'border-blue bg-blue/5 shadow-xl scale-[1.02]'
                                 : 'border-beige hover:border-blue/30'
                             }`}
