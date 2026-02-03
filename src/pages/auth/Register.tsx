@@ -58,9 +58,33 @@ const Register: React.FC = () => {
         setError('');
 
         try {
-            const response = await authService.register(formData);
+            const quizDataString = sessionStorage.getItem('tarakid_onboarding');
+            let payload = { ...formData };
+
+            if (quizDataString) {
+                try {
+                    const quizData = JSON.parse(quizDataString);
+                    // Only send kidInfo if they actually reached the last step (hobbies)
+                    // or if the data is sufficiently complete.
+                    if (quizData.hobbies && quizData.hobbies.length > 0) {
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-ignore
+                        payload.kidInfo = quizData;
+                    }
+                } catch (e) {
+                    console.error('Error parsing quiz data', e);
+                }
+            }
+
+            const response = await authService.register(payload);
+
+            // Clear quiz data after successful registration
+            if (quizDataString) {
+                sessionStorage.removeItem('tarakid_onboarding');
+            }
+
             setSuccess(response.message);
-            setTimeout(() => navigate('/login'), 3000);
+            setTimeout(() => navigate('/login'), 5000);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Une erreur est survenue lors de l\'inscription');
         } finally {
@@ -77,9 +101,9 @@ const Register: React.FC = () => {
                 <div className="mb-6 flex flex-col items-center">
                     <Logo className="h-14 mb-4" />
                     <h1 className="text-3xl font-black text-navy mb-2 leading-tight text-center">
-                        Créer un <span className="text-orange italic">compte</span>
+                        Créer un <span className="text-orange italic">compte parent</span>
                     </h1>
-                    <p className="text-navy/60 font-medium">Rejoignez la communauté TaraKid</p>
+                    <p className="text-navy/60 font-medium text-center">Informations du parent ou tuteur légal</p>
                 </div>
 
                 <Card className="w-full">
@@ -100,9 +124,19 @@ const Register: React.FC = () => {
                                 </div>
                             )}
 
+                            <div className="bg-blue/5 border-2 border-blue/10 rounded-xl p-4 mb-2">
+                                <p className="text-sm font-bold text-navy flex items-center">
+                                    <User className="w-4 h-4 mr-2 text-blue" />
+                                    Vos informations en tant que parent
+                                </p>
+                                <p className="text-xs text-navy/60 mt-1">
+                                    Ces informations seront utilisées pour votre compte parent. Les informations de votre enfant ont été collectées à l'étape précédente.
+                                </p>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <Input
-                                    label="Prénom"
+                                    label="Votre prénom"
                                     name="firstName"
                                     icon={User}
                                     value={formData.firstName}
@@ -112,7 +146,7 @@ const Register: React.FC = () => {
                                     required
                                 />
                                 <Input
-                                    label="Nom"
+                                    label="Votre nom"
                                     name="lastName"
                                     icon={User}
                                     value={formData.lastName}
@@ -124,7 +158,7 @@ const Register: React.FC = () => {
                             </div>
 
                             <Input
-                                label="Adresse Email"
+                                label="Votre adresse email"
                                 name="email"
                                 icon={Mail}
                                 type="email"
@@ -136,7 +170,7 @@ const Register: React.FC = () => {
                             />
 
                             <Input
-                                label="Mot de passe"
+                                label="Votre mot de passe"
                                 name="password"
                                 icon={Lock}
                                 type={showPassword ? 'text' : 'password'}

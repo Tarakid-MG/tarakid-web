@@ -6,7 +6,9 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { Logo } from '../../components/ui/Logo';
 import { authService } from '../../services/auth.service';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContextDefinition';
+import api from '../../api/client';
+import { type User } from '../../types/auth';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
@@ -20,7 +22,10 @@ const Login: React.FC = () => {
         password: '',
     });
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [isUnverified, setIsUnverified] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const validateField = (name: string, value: string) => {
@@ -39,6 +44,24 @@ const Login: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         validateField(name, value);
+        if (error) setError('');
+        if (isUnverified) setIsUnverified(false);
+    };
+
+    const handleResendVerification = async () => {
+        setResending(true);
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            await authService.resendVerification(formData.email);
+            setSuccessMessage('L\'email de vérification a été renvoyé !');
+            setIsUnverified(false);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Une erreur est survenue.');
+        } finally {
+            setResending(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -48,10 +71,37 @@ const Login: React.FC = () => {
 
         try {
             const response = await authService.login(formData);
+            // Before setting token, we can fetch profile to decide where to go
+            // or let AuthContext handle it. But to be safe and immediate:
+            const profileResponse = await api.get<User>('/users/profile', {
+                headers: { Authorization: `Bearer ${response.access_token}` }
+            });
+            const user = profileResponse.data;
+
             setAuthToken(response.access_token);
-            navigate('/dashboard');
+
+            const role = user.role?.toLowerCase();
+            if (role === 'admin') {
+                navigate('/admin/sessions');
+            } else if (user.kids && user.kids.length > 0) {
+                // User has kids - check if they have bookings
+                if (user.bookings && user.bookings.length > 0) {
+                    // Has bookings, go to dashboard
+                    navigate('/dashboard');
+                } else {
+                    // Has kids but no bookings, go to booking page
+                    navigate(`/free-trial-booking?userId=${user.id}`);
+                }
+            } else {
+                // No kids, need to complete quiz
+                navigate('/quiz');
+            }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
+            const msg = err.response?.data?.message || 'Email ou mot de passe incorrect';
+            setError(msg);
+            if (msg.includes('vérifier') || msg.toLowerCase().includes('verified')) {
+                setIsUnverified(true);
+            }
         } finally {
             setLoading(false);
         }
@@ -80,8 +130,24 @@ const Login: React.FC = () => {
                 <Card className="w-full">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {error && (
-                            <div className="bg-red-50 border-2 border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-bold">
-                                {error}
+                            <div className="bg-red-50 border-2 border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-bold flex flex-col gap-2">
+                                <span>{error}</span>
+                                {isUnverified && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResendVerification}
+                                        disabled={resending}
+                                        className="text-blue hover:underline text-left disabled:opacity-50"
+                                    >
+                                        {resending ? 'Envoi...' : 'Renvoyer l\'email de vérification'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="bg-green-50 border-2 border-green-200 text-green-600 px-4 py-3 rounded-xl text-sm font-bold">
+                                {successMessage}
                             </div>
                         )}
 

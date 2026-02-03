@@ -9,6 +9,8 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Logo } from '../../components/ui/Logo';
 import { type QuizData } from '../../types/quiz';
+import { useAuth } from '../../context/AuthContextDefinition';
+import api from '../../api/client';
 
 // Step Components
 import AgeStep from '../../components/quiz/steps/AgeStep';
@@ -37,17 +39,41 @@ const Quiz: React.FC = () => {
         hobbies: [],
     });
 
-    useEffect(() => {
-        if (showTransition) {
-            const timer = setTimeout(() => {
-                navigate('/register');
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [showTransition, navigate]);
+    const { user, isAuthenticated, refreshProfile } = useAuth();
 
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        if (showTransition) {
+            const finishQuiz = async () => {
+                if (isAuthenticated && user) {
+                    try {
+                        await api.post('/kids', data);
+                        await refreshProfile();
+                        // Redirect directly to booking
+                        navigate(`/free-trial-booking?userId=${user?.id}`);
+                    } catch (err) {
+                        console.error('Failed to save quiz for existing user', err);
+                        // Fallback to register if something goes wrong, or error state
+                        navigate('/register');
+                    }
+                } else {
+                    const timer = setTimeout(() => {
+                        navigate('/register');
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
+            };
+
+            finishQuiz();
+        }
+    }, [showTransition, navigate, isAuthenticated, user, data]);
+
+    useEffect(() => {
+        // If user already has kids and tries to access quiz, maybe redirect?
+        // But let them add more kids if they want.
+    }, []);
+
+    useEffect(() => {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
                 setData(JSON.parse(saved));
@@ -58,7 +84,7 @@ const Quiz: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }, [data]);
 
     const handleNext = () => {
