@@ -44,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [token, fetchProfile]);
 
   const login = (newToken: string) => {
+    localStorage.setItem("token", newToken);
     setToken(newToken);
   };
 
@@ -51,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     setUser(null);
     // localStorage and sessionStorage clearing handled by effects or explicit calls if needed beyond token
+    localStorage.removeItem("kidModeActive");
+    localStorage.removeItem("selectedKid");
     sessionStorage.clear();
   };
 
@@ -75,6 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -85,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         refreshProfile,
         verifyPassword,
         isAuthenticated: !!token,
+        updateUser,
       }}
     >
       {children}

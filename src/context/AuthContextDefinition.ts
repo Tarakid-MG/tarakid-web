@@ -9,6 +9,7 @@ export interface AuthContextType {
   refreshProfile: () => Promise<void>;
   verifyPassword: (password: string) => Promise<boolean>;
   isAuthenticated: boolean;
+  updateUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

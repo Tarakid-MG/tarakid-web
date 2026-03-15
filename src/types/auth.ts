@@ -1,90 +1,137 @@
-export type UserRole = 'admin' | 'teacher' | 'client' | 'support';
-export type AccountType = 'INDIVIDUAL' | 'BUSINESS' | 'PARENT';
+export type UserRole = "admin" | "teacher" | "client" | "support";
+export type AccountType =
+  | "INDIVIDUAL"
+  | "BUSINESS"
+  | "PARENT"
+  | "parent"
+  | "kid";
 
 export interface Kid {
-    id: number;
-    name: string;
-    age: number;
-    hobbies: string[];
-    // add other fields if needed, but these are enough for the check
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  motherTongueProficiency: string;
+  englishReadingLevel: string;
+  englishSpeakingLevel: string;
+  learningDuration: string;
+  hobbies: string[];
+  avatarUrl?: string;
+  level?: string;
 }
 
 export interface FreeTrialSession {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    capacity: number;
-    bookedSlots: number;
-    type: 'FREE_TRIAL' | 'REGULAR';
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  bookedSlots: number;
+  type: "FREE_TRIAL" | "REGULAR";
 }
 
 export interface FreeTrialBooking {
-    id: number;
-    userId: number;
-    kidId?: number;
-    sessionId: number;
-    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-    createdAt: string;
-    session?: FreeTrialSession;
+  id: number;
+  userId: number;
+  kidId?: string;
+  sessionId: number;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  createdAt: string;
+  session?: FreeTrialSession;
 }
 
 export interface Subscription {
-    id: string;
-    userId: number;
-    kidId?: string;
-    planName: string;
-    frequency: number;
-    commitmentType: 'MONTHLY' | 'THREE_MONTHS' | 'SIX_MONTHS';
-    creditsPerMonth: number;
-    totalCredits: number;
-    remainingCredits: number;
-    pricePerMonth: number;
-    startDate: string;
-    endDate: string;
-    status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
-    kid?: Kid;
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  userId: number;
+  kidId?: string;
+  planName: string;
+  frequency: number;
+  commitmentType: "MONTHLY" | "THREE_MONTHS" | "SIX_MONTHS";
+  creditsPerMonth: number;
+  totalCredits: number;
+  remainingCredits: number;
+  pricePerMonth: number;
+  startDate: string;
+  endDate: string;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  kid?: Kid;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurrencePattern {
+  frequency?: "DAILY" | "WEEKLY" | "MONTHLY";
+  interval?: number;
+  endDate?: string;
+  daysOfWeek?: number[];
 }
 
 export interface Booking {
-    id: string;
-    subscriptionId: string;
-    kidId: string;
-    userId: number;
-    sessionDate: string;
-    startTime: string;
-    endTime: string;
-    dayOfWeek: number;
-    isRecurring: boolean;
-    recurrencePattern?: any;
-    status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'MISSED';
-    teacherId?: number;
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  subscriptionId: string;
+  kidId: string;
+  userId: number;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  dayOfWeek: number;
+  isRecurring: boolean;
+  recurrencePattern?: RecurrencePattern;
+  status:
+    | "SCHEDULED"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "MISSED"
+    | "ABSENT"
+    | "REPORTED"
+    | "DONE_BUT_MISSING";
+  teacherId?: number;
+  kid?: Kid;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
-    id: number;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role: UserRole;
-    accountType?: AccountType;
-    isVerified: boolean;
-    kids?: Kid[];
-    bookings?: FreeTrialBooking[];
-    subscriptions?: Subscription[];
-    credits?: number;
-    subscriptionPlan?: string;
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: UserRole;
+  accountType?: AccountType;
+  isVerified: boolean;
+  kids?: Kid[];
+  bookings?: FreeTrialBooking[];
+  subscriptions?: Subscription[];
+  credits?: number;
+  subscriptionPlan?: string;
+  phoneNumber?: string;
+  address?: string;
+}
+
+export interface LoginDto {
+  email: string;
+  password: string;
+}
+
+export interface RegisterDto {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  accountType?: AccountType;
+}
+
+export interface ResetPasswordDto {
+  token: string;
+  password: string;
 }
 
 export interface AuthResponse {
-    access_token: string;
+  access_token: string;
 }
 
 export interface MessageResponse {
-    message: string;
-    userId?: number;
+  message: string;
+  userId?: number;
 }

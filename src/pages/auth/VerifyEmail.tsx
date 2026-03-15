@@ -30,9 +30,9 @@ const VerifyEmail: React.FC = () => {
                 const response = await authService.verifyEmail(token);
                 setStatus('success');
                 setMessage(response.message);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 setStatus('error');
-                setMessage(err.response?.data?.message || 'Échec de la vérification.');
+                setMessage(err instanceof Error ? err.message : 'Échec de la vérification.');
             }
         };
 
@@ -50,22 +50,22 @@ const VerifyEmail: React.FC = () => {
         try {
             await authService.resendVerification(resendEmail);
             setResendSuccess('L\'email de vérification a été renvoyé !');
-        } catch (err: any) {
-            setResendError(err.response?.data?.message || 'Une erreur est survenue.');
+        } catch (err: unknown) {
+            setResendError(err instanceof Error ? err.message : 'Une erreur est survenue.');
         } finally {
             setResending(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-lightBlue/10 via-white to-yellow/10 flex items-center justify-center p-4 overflow-hidden relative">
+        <div className="min-h-screen bg-linear-to-br from-lightBlue/10 via-white to-yellow/10 flex items-center justify-center p-4 overflow-hidden relative">
             <div className="absolute top-20 -left-10 w-32 h-32 bg-yellow rounded-full blur-3xl opacity-30"></div>
             <div className="absolute bottom-20 -right-10 w-48 h-48 bg-lightBlue rounded-full blur-3xl opacity-30"></div>
 
             <div className="max-w-md w-full relative z-10 flex flex-col items-center">
                 <Logo className="h-16 mb-8" />
 
-                <Card className="w-full text-center py-8">
+                <Card className="w-full text-center p-8">
                     {status === 'loading' && (
                         <div className="flex flex-col items-center">
                             <Loader2 className="w-16 h-16 text-blue animate-spin mb-6" />

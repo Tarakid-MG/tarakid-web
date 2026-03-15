@@ -24,7 +24,10 @@ export const ExitKidModeModal: React.FC = () => {
       const isValid = await verifyPassword(password);
       if (isValid) {
         exitKidMode();
-        navigate("/dashboard");
+        // Delay navigation slightly to let context state update propagate
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 100);
       } else {
         setError("Mot de passe incorrect");
       }

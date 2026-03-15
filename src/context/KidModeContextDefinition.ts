@@ -8,6 +8,7 @@ export interface KidModeContextType {
   enterKidMode: (kid: Kid) => void;
   exitKidMode: () => void;
   setShowExitModal: (show: boolean) => void;
+  updateSelectedKid: (kid: Kid) => void;
 }
 
 export const KidModeContext = createContext<KidModeContextType | undefined>(

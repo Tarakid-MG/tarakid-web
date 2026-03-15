@@ -12,11 +12,24 @@ export const freeTrialService = {
   async bookSession(
     sessionId: number,
     userId: number,
-    kidId?: number,
+    kidId?: string,
   ): Promise<FreeTrialBooking> {
     const response = await api.post<FreeTrialBooking>(
       `/free-trial/book/${sessionId}`,
       { userId, kidId },
+    );
+    return response.data;
+  },
+
+  async bookByDateTime(
+    userId: number,
+    date: string,
+    startTime: string,
+    kidId?: string,
+  ): Promise<FreeTrialBooking> {
+    const response = await api.post<FreeTrialBooking>(
+      "/free-trial/book-by-datetime",
+      { userId, date, startTime, kidId },
     );
     return response.data;
   },
@@ -66,6 +79,11 @@ export const freeTrialService = {
   },
 
   async cancelBooking(bookingId: number, userId: number): Promise<void> {
-    await api.delete(`/free-trial/bookings/${bookingId}`, { data: { userId } });
+    await api.patch(`/free-trial/bookings/${bookingId}/cancel`, { userId });
+  },
+
+  async reportBooking(bookingId: number, userId: number): Promise<void> {
+    await api.patch(`/free-trial/bookings/${bookingId}/report`, { userId });
   },
 };
+export type { FreeTrialSession };

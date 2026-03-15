@@ -12,13 +12,41 @@ import {
   ArrowLeft,
   ArrowRight,
   Info,
+  Sunrise,
+  Sun,
+  Moon,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { subscriptionService } from "../services/subscription.service";
-import { bookingService } from "../services/booking.service";
-import { freeTrialService } from "../services/free-trial.service";
-import { type Subscription, type FreeTrialSession } from "../types/auth";
+import {
+  bookingService,
+  type GlobalAvailability,
+} from "../services/booking.service";
+import { type Subscription } from "../types/auth";
 import BookingCalendar from "../components/quiz/BookingCalendar";
-import type { AxiosError } from "axios";
+
+const staticTimes = [
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+];
 
 const BookingCalendarPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -27,14 +55,19 @@ const BookingCalendarPage: React.FC = () => {
   const subscriptionId = searchParams.get("subscriptionId");
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [sessions, setSessions] = useState<FreeTrialSession[]>([]);
+  const [availability, setAvailability] = useState<GlobalAvailability | null>(
+    null,
+  );
+  const [availableDates, setAvailableDates] = useState<{
+    available: string[];
+    full: string[];
+  }>({ available: [], full: [] });
   const [customType, setCustomType] = useState<"individual" | "weekly">(
     "weekly",
   );
 
   // Custom Individual state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customBookings, setCustomBookings] = useState<
     Array<{ sessionDate: string; startTime: string; endTime: string }>
   >([]);
@@ -44,52 +77,43 @@ const BookingCalendarPage: React.FC = () => {
     Array<{ dayOfWeek: number; time: string }>
   >([]);
 
+  const [lastBookingDate, setLastBookingDate] = useState<Date | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  const staticTimes = [
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
-    "16:30",
-    "17:00",
-    "17:30",
-    "18:00",
-    "18:30",
-    "19:00",
-    "19:30",
-    "20:00",
-  ];
-
-  // Derived state for availability
-  const availableDates = useMemo(() => {
-    const dates = new Set(
-      sessions
-        .filter((s) => s.bookedSlots < s.capacity)
-        .map((s) => s.date.split("T")[0]),
-    );
-    return Array.from(dates);
-  }, [sessions]);
-
+  // Derived state for available times for a chosen date
   const availableTimesForSelectedDate = useMemo(() => {
-    if (!selectedDate) return [];
-    return sessions
-      .filter(
-        (s) =>
-          s.date.split("T")[0] === selectedDate && s.bookedSlots < s.capacity,
-      )
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .map((s) => s.startTime);
-  }, [selectedDate, sessions]);
+    if (!selectedDate || !availability) return [];
+
+    // Get day of week (0-6) from YYYY-MM-DD in a timezone-safe way
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const dow = dateObj.getDay();
+
+    const times: { time: string; remaining: number }[] = [];
+    Object.keys(availability.slotCapacities).forEach((key) => {
+      if (key.startsWith(`${dow}-`)) {
+        const time = key.split("-")[1]; // HH:mm from key
+        const capacity = availability.slotCapacities[key];
+
+        // Find existing bookings for this specific date and normalized time
+        const occupied =
+          availability.bookings.find(
+            (b) =>
+              b.date === selectedDate &&
+              b.startTime.substring(0, 5) === time.substring(0, 5),
+          )?.count || 0;
+
+        if (capacity > occupied) {
+          times.push({ time, remaining: capacity - occupied });
+        }
+      }
+    });
+    return times.sort((a, b) => a.time.localeCompare(b.time));
+  }, [selectedDate, availability]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,23 +123,56 @@ const BookingCalendarPage: React.FC = () => {
       }
 
       try {
-        const [sub, availableSessions] = await Promise.all([
+        const [sub, availabilityData, dates] = await Promise.all([
           subscriptionService.getSubscription(subscriptionId),
-          freeTrialService.getAvailableSessions(),
+          bookingService.getGlobalAvailability(),
+          bookingService.getAvailableDates(12),
         ]);
 
         setSubscription(sub);
-        setSessions(availableSessions);
+        setAvailability(availabilityData);
+        setAvailableDates(dates);
+
+        // Fetch existing bookings to find the last one
+        const existingBookings = await bookingService.getKidBookings(
+          user!.id.toString(),
+        );
+        const scheduled = existingBookings.filter(
+          (b) => b.status === "SCHEDULED",
+        );
+        if (scheduled.length > 0) {
+          const latest = scheduled.sort((a, b) =>
+            b.sessionDate.localeCompare(a.sessionDate),
+          )[0];
+          setLastBookingDate(new Date(latest.sessionDate));
+        }
+
+        // Find first available day and its first available slot for sensible defaults
+        const firstAvailableDay =
+          [1, 2, 3, 4, 5, 6, 0].find((d) =>
+            Object.keys(availabilityData.slotCapacities).some((k) =>
+              k.startsWith(`${d}-`),
+            ),
+          ) ?? 1;
+        const firstAvailableSlot =
+          staticTimes.find(
+            (t) =>
+              (availabilityData.slotCapacities[`${firstAvailableDay}-${t}`] ||
+                0) > 0,
+          ) ?? "09:00";
 
         // Initialize weekly slots based on frequency
         setWeeklySlots(
           Array(sub.frequency)
             .fill(0)
-            .map(() => ({ dayOfWeek: 1, time: "09:00" })),
+            .map(() => ({
+              dayOfWeek: firstAvailableDay,
+              time: firstAvailableSlot,
+            })),
         );
       } catch (error) {
         console.error("Failed to load data", error);
-        alert("Impossible de charger les données");
+        setError("Impossible de charger les données");
         navigate("/subscription");
       } finally {
         setLoading(false);
@@ -123,7 +180,7 @@ const BookingCalendarPage: React.FC = () => {
     };
 
     fetchData();
-  }, [subscriptionId, navigate]);
+  }, [subscriptionId, navigate, user]);
 
   const addMinutes = (time: string, minutes: number): string => {
     const [hours, mins] = time.split(":").map(Number);
@@ -133,11 +190,24 @@ const BookingCalendarPage: React.FC = () => {
     return `${String(newHours).padStart(2, "0")}:${String(newMins).padStart(2, "0")}`;
   };
 
-  const handleAddIndividualSlot = () => {
-    if (!selectedDate || !selectedTime || !subscription) return;
+  const getTimeIcon = (time: string) => {
+    const hour = parseInt(time.split(":")[0]);
+    if (hour < 12) return <Sunrise className="w-5 h-5" />;
+    if (hour < 18) return <Sun className="w-5 h-5" />;
+    return <Moon className="w-5 h-5" />;
+  };
+
+  const formatErrorDate = (msg: string) => {
+    return msg.replace(/(\d{1,2})\/(\d{1,2})\/(\d{4})/g, (m, d, y) => {
+      return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
+    });
+  };
+
+  const handleAddIndividualSlot = (time: string) => {
+    if (!selectedDate || !time || !subscription) return;
 
     if (customBookings.length >= subscription.remainingCredits) {
-      alert(
+      setError(
         `Vous ne pouvez pas réserver plus de ${subscription.remainingCredits} cours.`,
       );
       return;
@@ -145,8 +215,8 @@ const BookingCalendarPage: React.FC = () => {
 
     const newSlot = {
       sessionDate: selectedDate,
-      startTime: selectedTime,
-      endTime: addMinutes(selectedTime, 25),
+      startTime: time,
+      endTime: addMinutes(time, 25),
     };
 
     if (
@@ -161,40 +231,96 @@ const BookingCalendarPage: React.FC = () => {
     }
 
     setCustomBookings([...customBookings, newSlot]);
-    setSelectedTime(null);
   };
 
   const handleRemoveIndividualSlot = (index: number) => {
     setCustomBookings(customBookings.filter((_, i) => i !== index));
   };
 
+  // The date from which we start booking new sessions
+  const startDate = useMemo(() => {
+    const today = new Date();
+    if (!lastBookingDate) return today;
+    // Start the day after the last booking
+    const nextDay = new Date(lastBookingDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay > today ? nextDay : today;
+  }, [lastBookingDate]);
+
+  // Number of weeks to fill = from startDate until subscription end date (or commitment fallback)
+  const subscriptionWeeks = useMemo(() => {
+    if (subscription?.endDate) {
+      const end = new Date(subscription.endDate);
+      const diffMs = end.getTime() - startDate.getTime();
+      const weeks = Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000));
+      return Math.max(1, weeks);
+    }
+    // Fallback from commitmentType if endDate is missing
+    switch (subscription?.commitmentType) {
+      case "THREE_MONTHS":
+        return 13;
+      case "SIX_MONTHS":
+        return 26;
+      default:
+        return 4; // MONTHLY
+    }
+  }, [subscription, startDate]);
+
   // Calculate preview dates for weekly schedule
   const weeklyPreview = useMemo(() => {
-    const today = new Date();
-    const preview: Array<{ date: Date; time: string }> = [];
+    const preview: Array<{ date: Date; time: string; isAvailable: boolean }> =
+      [];
+    const maxSlots = subscription?.remainingCredits ?? Infinity;
+    let count = 0;
 
-    // Generate for next 4 weeks
-    for (let week = 0; week < 4; week++) {
-      weeklySlots.forEach((slot) => {
-        const date = new Date(today);
+    outer: for (let week = 0; week < subscriptionWeeks; week++) {
+      for (const slot of weeklySlots) {
+        if (count >= maxSlots) break outer;
+        const date = new Date(startDate);
         const daysToWait = (slot.dayOfWeek - date.getDay() + 7) % 7;
-        // If today is the day but time passed, move to next week?
-        // For simplicity, let's just schedule forward.
-        if (daysToWait === 0 && week === 0) {
-          // logic to check time could go here, for now we assume next instance
-        }
-
         date.setDate(date.getDate() + daysToWait + 7 * week);
-        preview.push({ date, time: slot.time });
-      });
+        // Don't include dates past end date
+        if (subscription?.endDate && date > new Date(subscription.endDate))
+          break outer;
+        // Don't include dates before startDate (edge case for offset calculation)
+        if (date < startDate) continue;
+
+        const dateStr = date.toISOString().split("T")[0];
+
+        // 1. Check if the date is in availableDates (teacher has recurring slot AND no full break)
+        const isDateAvailable = availableDates.available.includes(dateStr);
+
+        const key = `${slot.dayOfWeek}-${slot.time}`;
+        const capacity = availability?.slotCapacities[key] || 0;
+
+        const isAvailable =
+          isDateAvailable &&
+          capacity >
+            (availability?.bookings.find(
+              (b) =>
+                b.date === dateStr &&
+                b.startTime.substring(0, 5) === slot.time.substring(0, 5),
+            )?.count || 0);
+
+        preview.push({ date, time: slot.time, isAvailable });
+        if (isAvailable) count++;
+      }
     }
     return preview.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [weeklySlots]);
+  }, [
+    weeklySlots,
+    subscriptionWeeks,
+    subscription,
+    startDate,
+    availableDates,
+    availability,
+  ]);
 
   const handleCustomSubmit = async () => {
     if (!subscription) return;
 
     setBooking(true);
+    setError("");
     try {
       let bookingsToCreate = [];
 
@@ -209,17 +335,40 @@ const BookingCalendarPage: React.FC = () => {
           isRecurring: false,
         }));
       } else {
-        const today = new Date();
-        const numWeeks = 4;
+        // Generate one booking per weekly slot, for every week of the subscription,
+        // capped at remainingCredits
+        const maxBookings = subscription.remainingCredits;
+        let created = 0;
 
-        for (let week = 0; week < numWeeks; week++) {
+        outer: for (let week = 0; week < subscriptionWeeks; week++) {
           for (const slot of weeklySlots) {
-            const date = new Date(today);
+            if (created >= maxBookings) break outer;
+            const date = new Date(startDate);
             const daysToWait = (slot.dayOfWeek - date.getDay() + 7) % 7;
             date.setDate(date.getDate() + daysToWait + 7 * week);
+            // Respect end date
+            if (subscription.endDate && date > new Date(subscription.endDate))
+              break outer;
+            // Respect start date
+            if (date < startDate) continue;
+
+            const dateStr = date.toISOString().split("T")[0];
+            const isDateAvailable = availableDates.available.includes(dateStr);
+            if (!isDateAvailable) continue;
+
+            const key = `${slot.dayOfWeek}-${slot.time}`;
+            const capacity = availability?.slotCapacities[key] || 0;
+            const occupied =
+              availability?.bookings.find(
+                (b) =>
+                  b.date === dateStr &&
+                  b.startTime.substring(0, 5) === slot.time.substring(0, 5),
+              )?.count || 0;
+
+            if (capacity <= occupied) continue;
 
             bookingsToCreate.push({
-              sessionDate: date.toISOString().split("T")[0],
+              sessionDate: dateStr,
               startTime: slot.time,
               endTime: addMinutes(slot.time, 25),
               isRecurring: true,
@@ -228,7 +377,16 @@ const BookingCalendarPage: React.FC = () => {
                 daysOfWeek: [slot.dayOfWeek],
               },
             });
+            created++;
           }
+        }
+
+        if (bookingsToCreate.length === 0) {
+          alert(
+            "Aucun créneau généré. Vérifiez la durée et les jours sélectionnés.",
+          );
+          setBooking(false);
+          return;
         }
       }
 
@@ -242,10 +400,18 @@ const BookingCalendarPage: React.FC = () => {
       setSuccess(true);
     } catch (error: unknown) {
       console.error("Booking failed", error);
-      const err = error as unknown;
-      alert(
-        (err as AxiosError).response?.data ||
-          "Une erreur est survenue lors de la réservation.",
+      const err = error as {
+        response?: { data?: { message?: string } | string };
+      };
+      const errorMessage =
+        typeof err.response?.data === "object"
+          ? err.response?.data?.message
+          : err.response?.data;
+
+      setError(
+        formatErrorDate(
+          errorMessage || "Une erreur est survenue lors de la réservation.",
+        ),
       );
     } finally {
       setBooking(false);
@@ -347,6 +513,34 @@ const BookingCalendarPage: React.FC = () => {
             </Card>
           </div>
 
+          {/* Error Alert */}
+          {error && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 flex items-start gap-4 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <AlertCircle className="w-24 h-24 text-red-600" />
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shrink-0 shadow-sm">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="grow">
+                  <h4 className="text-red-900 font-black mb-1">
+                    Oups ! Une petite erreur...
+                  </h4>
+                  <p className="text-red-700/80 font-bold text-sm leading-relaxed">
+                    {error}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setError("")}
+                  className="p-2 text-red-300 hover:text-red-600 hover:bg-red-100 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Mode Selector */}
           <div className="flex justify-center">
             <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 inline-flex relative">
@@ -411,13 +605,25 @@ const BookingCalendarPage: React.FC = () => {
                                   setWeeklySlots(newSlots);
                                 }}
                               >
-                                <option value={1}>Lundi</option>
-                                <option value={2}>Mardi</option>
-                                <option value={3}>Mercredi</option>
-                                <option value={4}>Jeudi</option>
-                                <option value={5}>Vendredi</option>
-                                <option value={6}>Samedi</option>
-                                <option value={0}>Dimanche</option>
+                                {[
+                                  { v: 1, l: "Lundi" },
+                                  { v: 2, l: "Mardi" },
+                                  { v: 3, l: "Mercredi" },
+                                  { v: 4, l: "Jeudi" },
+                                  { v: 5, l: "Vendredi" },
+                                  { v: 6, l: "Samedi" },
+                                  { v: 0, l: "Dimanche" },
+                                ].map((day) => {
+                                  const hasAnySlot = Object.keys(
+                                    availability?.slotCapacities || {},
+                                  ).some((key) => key.startsWith(`${day.v}-`));
+                                  if (!hasAnySlot) return null;
+                                  return (
+                                    <option key={day.v} value={day.v}>
+                                      {day.l}
+                                    </option>
+                                  );
+                                })}
                               </select>
                               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-navy/40">
                                 <Calendar className="w-4 h-4" />
@@ -441,11 +647,17 @@ const BookingCalendarPage: React.FC = () => {
                                   setWeeklySlots(newSlots);
                                 }}
                               >
-                                {staticTimes.map((t) => (
-                                  <option key={t} value={t}>
-                                    {t}
-                                  </option>
-                                ))}
+                                {staticTimes.map((t) => {
+                                  const key = `${slot.dayOfWeek}-${t}`;
+                                  const capacity =
+                                    availability?.slotCapacities[key] || 0;
+                                  if (capacity === 0) return null;
+                                  return (
+                                    <option key={t} value={t}>
+                                      {t}
+                                    </option>
+                                  );
+                                })}
                               </select>
                               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-navy/40">
                                 <Clock className="w-4 h-4" />
@@ -466,7 +678,16 @@ const BookingCalendarPage: React.FC = () => {
                       <p className="text-sm font-bold opacity-80 leading-relaxed">
                         Créer une routine régulière aide votre enfant à mieux
                         assimiler les connaissances. Ces créneaux seront
-                        réservés pour les 4 prochaines semaines.
+                        réservés sur les{" "}
+                        <strong>
+                          {subscriptionWeeks} semaine
+                          {subscriptionWeeks > 1 ? "s" : ""}
+                        </strong>{" "}
+                        restantes de l'abonnement (
+                        {subscription.remainingCredits} crédits max)
+                        {lastBookingDate
+                          ? " et commenceront après vos cours existants."
+                          : "."}
                       </p>
                     </div>
                   </Card>
@@ -494,9 +715,11 @@ const BookingCalendarPage: React.FC = () => {
                         {weeklyPreview.map((slot, i) => (
                           <div
                             key={i}
-                            className="flex items-center gap-4 p-3 bg-white rounded-xl shadow-sm border border-slate-100"
+                            className={`flex items-center gap-4 p-3 bg-white rounded-xl shadow-sm border ${slot.isAvailable ? "border-slate-100" : "border-red-100 opacity-60"}`}
                           >
-                            <div className="w-12 h-12 rounded-xl bg-blue/5 flex flex-col items-center justify-center text-blue shrink-0">
+                            <div
+                              className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 ${slot.isAvailable ? "bg-blue/5 text-blue" : "bg-red-50 text-red-400"}`}
+                            >
                               <span className="text-[10px] font-black uppercase">
                                 {slot.date.toLocaleDateString("fr-FR", {
                                   month: "short",
@@ -506,8 +729,10 @@ const BookingCalendarPage: React.FC = () => {
                                 {slot.date.getDate()}
                               </span>
                             </div>
-                            <div>
-                              <p className="font-bold text-navy text-sm">
+                            <div className="grow">
+                              <p
+                                className={`font-bold text-sm ${slot.isAvailable ? "text-navy" : "text-navy/40"}`}
+                              >
                                 {slot.date.toLocaleDateString("fr-FR", {
                                   weekday: "long",
                                 })}
@@ -515,6 +740,11 @@ const BookingCalendarPage: React.FC = () => {
                               <div className="flex items-center gap-1.5 text-xs font-bold text-navy/40 mt-0.5">
                                 <Clock className="w-3 h-3" />
                                 {slot.time} - {addMinutes(slot.time, 25)}
+                                {!slot.isAvailable && (
+                                  <span className="ml-2 text-red-500 bg-red-50 px-2 py-0.5 rounded-full text-[10px]">
+                                    Indisponible
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -551,12 +781,15 @@ const BookingCalendarPage: React.FC = () => {
                         1. Choisir une date
                       </h3>
                       <BookingCalendar
-                        availableDates={availableDates}
+                        availableDates={availableDates.available}
+                        fullDates={availableDates.full}
                         selectedDate={selectedDate}
                         onDateSelect={setSelectedDate}
                         isAdmin={true}
+                        minDate={subscription.startDate.split("T")[0]}
+                        maxDate={subscription.endDate.split("T")[0]}
                       />
-                      {availableDates.length === 0 && !loading && (
+                      {availableDates.available.length === 0 && !loading && (
                         <div className="mt-4 p-4 bg-orange/5 border border-orange/10 rounded-xl flex items-start gap-3">
                           <Info className="w-5 h-5 text-orange shrink-0 mt-0.5" />
                           <p className="text-xs font-bold text-orange/80">
@@ -606,31 +839,78 @@ const BookingCalendarPage: React.FC = () => {
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                            {availableTimesForSelectedDate.map((t) => (
-                              <button
-                                key={t}
-                                onClick={() => setSelectedTime(t)}
-                                className={`py-3 rounded-xl border-2 font-black transition-all duration-200 ${
-                                  selectedTime === t
-                                    ? "border-blue bg-blue text-white shadow-lg shadow-blue/20 scale-105"
-                                    : "border-slate-100 hover:border-blue/20 hover:bg-blue/5 text-navy/60 bg-white"
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                          {availableTimesForSelectedDate.map(
+                            ({ time, remaining }) => {
+                              const isSelected = customBookings.some(
+                                (b) =>
+                                  b.sessionDate === selectedDate &&
+                                  b.startTime === time,
+                              );
+                              return (
+                                <button
+                                  key={time}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setCustomBookings(
+                                        customBookings.filter(
+                                          (b) =>
+                                            !(
+                                              b.sessionDate === selectedDate &&
+                                              b.startTime === time
+                                            ),
+                                        ),
+                                      );
+                                    } else {
+                                      handleAddIndividualSlot(time);
+                                    }
+                                  }}
+                                  className={`p-4 rounded-[28px] border-2 transition-all text-left flex flex-col justify-between group h-full min-h-[110px] relative overflow-hidden
+                                ${
+                                  isSelected
+                                    ? "border-blue bg-blue shadow-xl shadow-blue/20 scale-[1.05] z-10"
+                                    : "border-white bg-white hover:border-blue/20 shadow-sm hover:shadow-md"
                                 }`}
-                              >
-                                {t}
-                              </button>
-                            ))}
-                          </div>
-                          <Button
-                            onClick={handleAddIndividualSlot}
-                            disabled={!selectedTime}
-                            fullWidth
-                            size="lg"
-                            className="shadow-xl shadow-blue/20"
-                          >
-                            Ajouter ce créneau
-                          </Button>
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div
+                                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isSelected ? "bg-white/20 text-white" : "bg-blue/5 text-blue"}`}
+                                    >
+                                      {getTimeIcon(time)}
+                                    </div>
+                                    {isSelected && (
+                                      <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-blue">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <p
+                                        className={`text-xl font-black ${isSelected ? "text-white" : "text-navy"}`}
+                                      >
+                                        {time}
+                                      </p>
+                                      {remaining === 1 && (
+                                        <span
+                                          className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${isSelected ? "bg-white/20 text-white" : "bg-orange/10 text-orange border border-orange/20"}`}
+                                        >
+                                          Dernière place !
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p
+                                      className={`text-[8px] font-black uppercase tracking-widest ${isSelected ? "text-white/60" : "text-navy/20"}`}
+                                    >
+                                      {remaining}{" "}
+                                      {remaining > 1 ? "places" : "place"}{" "}
+                                      disponibles
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            },
+                          )}
                         </div>
                       )}
                     </Card>

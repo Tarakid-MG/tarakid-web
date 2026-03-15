@@ -6,19 +6,16 @@ export const KidModeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isKidMode, setIsKidMode] = useState<boolean>(() => {
-    const kidModeActive = sessionStorage.getItem("kidModeActive") === "true";
-    const kidData = sessionStorage.getItem("selectedKid");
-    return kidModeActive && !!kidData;
+    return localStorage.getItem("kidModeActive") === "true";
   });
 
   const [selectedKid, setSelectedKid] = useState<Kid | null>(() => {
-    const kidModeActive = sessionStorage.getItem("kidModeActive") === "true";
-    const kidData = sessionStorage.getItem("selectedKid");
-    if (kidModeActive && kidData) {
+    const kidData = localStorage.getItem("selectedKid");
+    if (kidData) {
       try {
         return JSON.parse(kidData);
       } catch (e) {
-        console.error("Failed to parse selectedKid from sessionStorage", e);
+        console.error("Failed to parse selectedKid from localStorage", e);
         return null;
       }
     }
@@ -30,16 +27,21 @@ export const KidModeProvider: React.FC<{ children: React.ReactNode }> = ({
   const enterKidMode = (kid: Kid) => {
     setIsKidMode(true);
     setSelectedKid(kid);
-    sessionStorage.setItem("kidModeActive", "true");
-    sessionStorage.setItem("selectedKid", JSON.stringify(kid));
+    localStorage.setItem("kidModeActive", "true");
+    localStorage.setItem("selectedKid", JSON.stringify(kid));
   };
 
   const exitKidMode = () => {
     setIsKidMode(false);
     setSelectedKid(null);
     setShowExitModal(false);
-    sessionStorage.removeItem("kidModeActive");
-    sessionStorage.removeItem("selectedKid");
+    localStorage.removeItem("kidModeActive");
+    localStorage.removeItem("selectedKid");
+  };
+
+  const updateSelectedKid = (kid: Kid) => {
+    setSelectedKid(kid);
+    localStorage.setItem("selectedKid", JSON.stringify(kid));
   };
 
   return (
@@ -51,6 +53,7 @@ export const KidModeProvider: React.FC<{ children: React.ReactNode }> = ({
         enterKidMode,
         exitKidMode,
         setShowExitModal,
+        updateSelectedKid,
       }}
     >
       {children}

@@ -21,15 +21,15 @@ const ForgotPassword: React.FC = () => {
         try {
             const response = await authService.forgotPassword(email);
             setSuccess(response.message);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Une erreur est survenue');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-lightBlue/10 via-white to-yellow/10 flex items-center justify-center p-4 overflow-hidden relative">
+        <div className="min-h-screen bg-linear-to-br from-lightBlue/10 via-white to-yellow/10 flex items-center justify-center p-4 overflow-hidden relative">
             <div className="absolute top-20 -left-10 w-32 h-32 bg-yellow rounded-full blur-3xl opacity-30 animate-pulse"></div>
             <div className="absolute bottom-20 -right-10 w-48 h-48 bg-lightBlue rounded-full blur-3xl opacity-30 animate-bounce"></div>
 
@@ -42,7 +42,7 @@ const ForgotPassword: React.FC = () => {
                     <p className="text-navy/60 font-medium text-center">Pas de panique, on s'en occupe !</p>
                 </div>
 
-                <Card className="w-full">
+                <Card className="w-full p-8">
                     {success ? (
                         <div className="text-center py-6">
                             <div className="w-16 h-16 bg-blue/10 text-blue rounded-full flex items-center justify-center mx-auto mb-4">
