@@ -99,6 +99,10 @@ export interface User {
   role: UserRole;
   accountType?: AccountType;
   isVerified: boolean;
+  isActive: boolean;
+  isOnline?: boolean;
+  lastLogin?: string;
+  lastActivity?: string;
   kids?: Kid[];
   bookings?: FreeTrialBooking[];
   subscriptions?: Subscription[];
@@ -106,6 +110,8 @@ export interface User {
   subscriptionPlan?: string;
   phoneNumber?: string;
   address?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginDto {

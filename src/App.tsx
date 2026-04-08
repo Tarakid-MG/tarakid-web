@@ -14,7 +14,6 @@ import Quiz from "./pages/auth/Quiz";
 import FreeTrialBooking from "./pages/FreeTrialBooking";
 import Dashboard from "./pages/Dashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
-import AdminSessions from "./pages/admin/AdminSessions";
 import { AuthProvider } from "./context/AuthContext";
 import { KidModeProvider } from "./context/KidModeContext";
 import { TeacherSessions } from "./pages/TeacherSessions";
@@ -31,6 +30,15 @@ import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import { ExitKidModeModal } from "./components/kid-mode/ExitKidModeModal";
 import TeacherGuard from "./components/auth/TeacherGuard";
 import { useKidMode } from "./hooks/useKidMode";
+import AdminGuard from "./components/auth/AdminGuard";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminBookingHistory from "./pages/admin/AdminBookingHistory";
+import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminClients from "./pages/admin/AdminClients";
+import AdminLessons from "./pages/admin/AdminLessons";
+import AdminLevels from "./pages/admin/AdminLevels";
 
 const AppRoutes = () => {
   const { isKidMode, showExitModal } = useKidMode();
@@ -151,7 +159,6 @@ const AppRoutes = () => {
                 </QuizGuard>
               }
             />
-            <Route path="/admin/sessions" element={<AdminSessions />} />
             <Route
               path="/teacher/dashboard"
               element={
@@ -166,6 +173,65 @@ const AppRoutes = () => {
                 <TeacherGuard>
                   <TeacherSessions />
                 </TeacherGuard>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <AdminGuard>
+                  <AdminDashboard />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/bookings"
+              element={
+                <AdminGuard>
+                  <AdminBookings />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/booking-history"
+              element={
+                <AdminGuard>
+                  <AdminBookingHistory />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/teachers"
+              element={
+                <AdminGuard>
+                  <AdminTeachers />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/clients"
+              element={
+                <AdminGuard>
+                  <AdminClients />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/lessons"
+              element={
+                <AdminGuard>
+                  <AdminLessons />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/levels"
+              element={
+                <AdminGuard>
+                  <AdminLevels />
+                </AdminGuard>
               }
             />
             <Route path="/" element={<Navigate to="/quiz" replace />} />

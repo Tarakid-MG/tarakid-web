@@ -90,9 +90,9 @@ const Login: React.FC = () => {
 
       const role = user.role?.toLowerCase();
       if (role === "admin") {
-        navigate("/admin/sessions");
+        navigate("/admin/dashboard");
       } else if (role === "teacher") {
-        navigate("/settings");
+        navigate("/teacher/dashboard");
       } else if (user.kids && user.kids.length > 0) {
         // User has kids - check if they have bookings
         if (user.bookings && user.bookings.length > 0) {

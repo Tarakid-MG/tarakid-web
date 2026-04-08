@@ -1,14 +1,8 @@
 import api from "../api/client";
 import { type FreeTrialSession, type FreeTrialBooking } from "../types/auth";
+import type { GlobalAvailability } from "./booking.service";
 
 export const freeTrialService = {
-  async getAvailableSessions(): Promise<FreeTrialSession[]> {
-    const response = await api.get<FreeTrialSession[]>(
-      "/free-trial/available-sessions",
-    );
-    return response.data;
-  },
-
   async bookSession(
     sessionId: number,
     userId: number,
@@ -34,48 +28,15 @@ export const freeTrialService = {
     return response.data;
   },
 
-  async getBookings(userId: number): Promise<FreeTrialBooking[]> {
-    const response = await api.get<FreeTrialBooking[]>(
-      `/free-trial/bookings/user/${userId}`,
-    );
-    return response.data;
-  },
-
-  async createSession(
-    dto: Partial<FreeTrialSession>,
-  ): Promise<FreeTrialSession> {
-    const response = await api.post<FreeTrialSession>(
-      "/free-trial/sessions",
-      dto,
-    );
-    return response.data;
-  },
-  async createBulkSessions(data: {
-    startDate: string;
-    endDate: string;
-    daysOfWeek: number[];
-    startTimes: string[];
-    capacity: number;
-  }): Promise<void> {
-    await api.post("/free-trial/bulk-sessions", data);
-  },
-
-  async updateSession(
-    id: number,
-    data: Partial<FreeTrialSession>,
-  ): Promise<void> {
-    await api.patch(`/free-trial/sessions/${id}`, data);
-  },
-
-  async deleteSession(id: number): Promise<void> {
-    await api.delete(`/free-trial/sessions/${id}`);
-  },
-
   async getUserBookings(userId: number): Promise<FreeTrialBooking[]> {
     const response = await api.get<FreeTrialBooking[]>(
       `/free-trial/bookings/user/${userId}`,
     );
     return response.data;
+  },
+
+  async getBookings(userId: number): Promise<FreeTrialBooking[]> {
+    return this.getUserBookings(userId);
   },
 
   async cancelBooking(bookingId: number, userId: number): Promise<void> {
@@ -85,5 +46,25 @@ export const freeTrialService = {
   async reportBooking(bookingId: number, userId: number): Promise<void> {
     await api.patch(`/free-trial/bookings/${bookingId}/report`, { userId });
   },
+
+  async getGlobalAvailability(): Promise<GlobalAvailability> {
+    const response = await api.get<GlobalAvailability>(
+      "/bookings/availability",
+    );
+    return response.data;
+  },
+
+  async getAvailableDates(
+    months: number = 2,
+  ): Promise<{ available: string[]; full: string[] }> {
+    const response = await api.get<{ available: string[]; full: string[] }>(
+      "/bookings/available-dates",
+      {
+        params: { months },
+      },
+    );
+    return response.data;
+  },
 };
+
 export type { FreeTrialSession };

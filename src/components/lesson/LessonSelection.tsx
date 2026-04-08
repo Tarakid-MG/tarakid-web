@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { X, Play, ChevronRight, BookOpen, Lock } from "lucide-react";
+import {
+  X,
+  Play,
+  ChevronRight,
+  BookOpen,
+  Lock,
+  FileText,
+  Video,
+} from "lucide-react";
 import lessonService from "../../services/lesson.service";
 import type { Unit, Lesson } from "../../services/lesson.service";
 import { useKidMode } from "../../hooks/useKidMode";
@@ -158,7 +166,13 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
                               </div>
                             ) : (
                               <div className="bg-white/90 backdrop-blur-sm p-2 rounded-xl text-blue shadow-lg border border-white">
-                                <Play className="w-5 h-5 fill-current" />
+                                {lesson.type === "pdf" ? (
+                                  <FileText className="w-5 h-5" />
+                                ) : lesson.type === "video" ? (
+                                  <Video className="w-5 h-5" />
+                                ) : (
+                                  <Play className="w-5 h-5 fill-current" />
+                                )}
                               </div>
                             )}
                           </div>

@@ -1,6 +1,6 @@
 import api from "../api/client";
 
-export type LessonType = "genially" | "pdf";
+export type LessonType = "genially" | "pdf" | "video";
 
 export interface Lesson {
   id: string;
