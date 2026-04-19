@@ -18,6 +18,12 @@ export interface Kid {
   hobbies: string[];
   avatarUrl?: string;
   level?: string;
+  assignedTeacherId?: number;
+  assignedTeacher?: {
+    id: number;
+    firstName?: string;
+    lastName?: string;
+  };
 }
 
 export interface FreeTrialSession {
@@ -37,7 +43,13 @@ export interface FreeTrialBooking {
   sessionId: number;
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
   createdAt: string;
+  isKidWaiting?: boolean;
+  isKidAccepted?: boolean;
+  isTeacherInClass?: boolean;
   session?: FreeTrialSession;
+  kid?: Kid;
+  lesson?: any;
+  interactionData?: string;
 }
 
 export interface Subscription {
@@ -86,7 +98,12 @@ export interface Booking {
     | "REPORTED"
     | "DONE_BUT_MISSING";
   teacherId?: number;
+  isKidWaiting?: boolean;
+  isKidAccepted?: boolean;
+  isTeacherInClass?: boolean;
   kid?: Kid;
+  lesson?: any;
+  interactionData?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,6 +124,7 @@ export interface User {
   bookings?: FreeTrialBooking[];
   subscriptions?: Subscription[];
   credits?: number;
+  hearts?: number;
   subscriptionPlan?: string;
   phoneNumber?: string;
   address?: string;

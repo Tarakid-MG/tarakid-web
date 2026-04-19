@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  CalendarCheck,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -9,18 +8,19 @@ import {
   UserCheck,
   RefreshCw,
   Eye,
+  Star,
 } from "lucide-react";
 import {
   adminService,
   type BookedSlot,
   type AssignedBooking,
   type BookingDetails,
-  type BookingAssignmentHistory,
+  type HistoryBooking,
 } from "../../services/admin.service";
 import { type User } from "../../types/auth";
 import AdminLayout from "./AdminLayout";
 
-type Tab = "pending" | "assigned" | "history";
+type Tab = "regular" | "trial" | "assigned" | "history";
 
 // ─── Assign Teacher Modal ─────────────────────────────────────────────────────
 interface AssignModalProps {
@@ -129,23 +129,56 @@ const AssignModal: React.FC<AssignModalProps> = ({
 interface BookingDetailsModalProps {
   bookingId: string;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
 const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   bookingId,
   onClose,
+  onRefresh,
 }) => {
   const [details, setDetails] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [assigningAll, setAssigningAll] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setLoading(true);
     adminService
       .getBookingDetails(bookingId)
       .then(setDetails)
       .catch(() => setError("Impossible de charger les détails"))
       .finally(() => setLoading(false));
   }, [bookingId]);
+
+  const loadTeachers = async () => {
+    if (teachers.length > 0) return;
+    setLoadingTeachers(true);
+    try {
+      const data = await adminService.getTeachers();
+      setTeachers(data);
+    } catch {
+      setError("Impossible de charger les professeurs");
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
+
+  const handleAssignAll = async (teacherId: number) => {
+    if (!details?.kid?.id) return;
+    setAssigningAll(teacherId);
+    try {
+      await adminService.reassignKidBookings(details.kid.id, teacherId, true);
+      onRefresh();
+      onClose();
+    } catch {
+      setError("Erreur lors de l'assignation groupée");
+    } finally {
+      setAssigningAll(null);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -209,6 +242,15 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                         {details.kid.englishSpeakingLevel || "Non défini"}
                       </span>
                     </p>
+                    {details.kid.assignedTeacher && (
+                      <p className="mt-2 pt-2 border-t border-slate-100">
+                        Professeur Assigné:{" "}
+                        <span className="font-bold text-blue">
+                          {details.kid.assignedTeacher.firstName}{" "}
+                          {details.kid.assignedTeacher.lastName}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -234,6 +276,77 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                 )}
               </div>
             </div>
+
+            {details?.type === "REGULAR" &&
+              details?.upcomingSessions &&
+              details?.upcomingSessions.length > 0 && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-bold text-navy/40 uppercase tracking-wider mb-3">
+                    Toutes les séances réservées
+                  </p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                    {details?.upcomingSessions.map((s) => (
+                      <div
+                        key={String(s.id)}
+                        className="flex items-center justify-between text-sm bg-white p-2 rounded-xl border border-slate-100"
+                      >
+                        <div>
+                          <span className="font-bold text-navy">{s.date}</span>
+                          <span className="ml-2 text-navy/40 font-bold">
+                            {s.time}
+                          </span>
+                        </div>
+                        <div>
+                          {s.teacherId ? (
+                            <span className="text-[10px] font-black text-blue uppercase bg-blue/5 px-2 py-0.5 rounded-lg border border-blue/10">
+                              Assigné
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black text-orange uppercase bg-orange/5 px-2 py-0.5 rounded-lg border border-orange/10">
+                              En attente
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {details?.type === "REGULAR" && details?.subscription && (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p className="text-xs font-bold text-navy/40 uppercase tracking-wider mb-2">
+                  Plan de l'abonnement
+                </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-navy text-base">
+                      {details.subscription.planName}
+                    </p>
+                    <p className="text-sm text-navy/60">
+                      {details.subscription.frequency} fois par semaine
+                    </p>
+                    <p className="text-xs text-navy/40 mt-1">
+                      Durée: {details.subscription.commitmentType}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-navy/60">
+                      Du{" "}
+                      {new Date(
+                        details.subscription.startDate,
+                      ).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs font-medium text-navy/60">
+                      Au{" "}
+                      {new Date(
+                        details.subscription.endDate,
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="bg-blue/5 p-4 rounded-2xl border border-blue/10">
               <p className="text-xs font-bold text-blue/60 uppercase tracking-wider mb-1">
                 Session
@@ -241,21 +354,63 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               <div className="flex justify-between items-center mt-2">
                 <div>
                   <p className="font-bold text-navy">
-                    {details.date || "Date non définie"}
+                    {details?.date || "Date non définie"}
                   </p>
                   <p className="text-sm text-navy/60">
-                    {details.time || "Heure non définie"}
+                    {details?.time || "Heure non définie"}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold tracking-wider bg-orange/10 text-orange px-2 py-1 rounded-lg uppercase">
-                    {details.type}
+                    {details?.type}
                   </p>
                   <p className="text-xs font-bold tracking-wider bg-slate-200 text-slate-600 px-2 py-1 rounded-lg uppercase mt-1 inline-block">
-                    {details.status}
+                    {details?.status}
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Bulk Assignment Toggle */}
+            <div className="pt-4 border-t border-slate-100">
+              <button
+                onClick={loadTeachers}
+                className="w-full bg-navy text-white font-bold py-3 rounded-2xl hover:bg-navy/90 transition-all flex items-center justify-center gap-2"
+              >
+                <UserCheck className="w-5 h-5" />
+                Assigner tous les cours de cet enfant à un professeur
+              </button>
+
+              {loadingTeachers && (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue" />
+                </div>
+              )}
+
+              {!loadingTeachers && teachers.length > 0 && (
+                <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {teachers.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between bg-slate-50 p-3 rounded-xl hover:bg-slate-100 transition-colors"
+                    >
+                      <div>
+                        <p className="font-bold text-navy text-sm">
+                          {t.firstName} {t.lastName}
+                        </p>
+                        <p className="text-xs text-navy/40">{t.email}</p>
+                      </div>
+                      <button
+                        onClick={() => handleAssignAll(t.id)}
+                        disabled={assigningAll === t.id}
+                        className="bg-blue text-white text-[10px] font-black px-3 py-1.5 rounded-lg hover:bg-deepBlue transition-colors disabled:opacity-50"
+                      >
+                        {assigningAll === t.id ? "Assignation..." : "Choisir"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ) : null}
@@ -266,10 +421,11 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const AdminBookings: React.FC = () => {
-  const [tab, setTab] = useState<Tab>("pending");
+  const [tab, setTab] = useState<Tab>("regular");
   const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
   const [assigned, setAssigned] = useState<AssignedBooking[]>([]);
-  const [history, setHistory] = useState<BookingAssignmentHistory[]>([]);
+  const [history, setHistory] = useState<HistoryBooking[]>([]);
+  const [teachers, setTeachers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<BookedSlot | null>(null);
@@ -277,20 +433,24 @@ const AdminBookings: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchTeacherId, setBatchTeacherId] = useState("");
   const [batchAssigning, setBatchAssigning] = useState(false);
+  const [subTab, setSubTab] = useState<"regular" | "trial">("regular");
   const [detailsBookingId, setDetailsBookingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [slots, assignedData, historyData] = await Promise.all([
-        adminService.getBookedSlots(),
-        adminService.getAssignedBookings(),
-        adminService.getAssignmentsTrace(),
-      ]);
+      const [slots, assignedData, historyData, teachersData] =
+        await Promise.all([
+          adminService.getBookedSlots(),
+          adminService.getAssignedBookings(),
+          adminService.getBookingHistory(),
+          adminService.getTeachers(),
+        ]);
       setBookedSlots(slots);
       setAssigned(assignedData);
       setHistory(historyData);
+      setTeachers(teachersData);
     } catch {
       setError("Erreur lors du chargement");
     } finally {
@@ -303,21 +463,102 @@ const AdminBookings: React.FC = () => {
   }, [fetchData]);
 
   const assignedIds = new Set(assigned.map((a) => String(a.id)));
-  const pending = bookedSlots.filter((s) => !assignedIds.has(String(s.id)));
 
-  const filteredPending = pending.filter(
-    (s) =>
-      s.date.includes(search) ||
-      s.time.includes(search) ||
-      s.type.toLowerCase().includes(search.toLowerCase()),
+  // --- Filtering & Grouping ---
+
+  const pendingRegular = bookedSlots.filter(
+    (s) => s.type === "REGULAR" && !assignedIds.has(String(s.id)),
   );
 
-  const filteredAssigned = assigned.filter(
-    (a) =>
-      (a.sessionDate ?? a.date ?? "").includes(search) ||
-      a.startTime.includes(search) ||
-      a.status.toLowerCase().includes(search.toLowerCase()),
+  const pendingTrial = bookedSlots.filter(
+    (s) => s.type === "FREE_TRIAL" && !assignedIds.has(String(s.id)),
   );
+
+  const assignedRegular = assigned.filter((a) => a.type === "REGULAR");
+  const assignedTrial = assigned.filter((a) => a.type === "FREE_TRIAL");
+
+  const historyRegular = history.filter(
+    (h: HistoryBooking) => h.type?.toUpperCase() === "REGULAR",
+  );
+  const historyTrial = history.filter(
+    (h: HistoryBooking) => h.type?.toUpperCase() === "FREE_TRIAL",
+  );
+
+  interface AdminBookingView {
+    id: string | number;
+    type?: string;
+    date?: string;
+    time?: string;
+    sessionDate?: string;
+    startTime?: string;
+    kidName?: string;
+    kidId?: string | number;
+    userId?: string | number;
+    kid?: { id?: number; name: string; age?: number };
+    teacher?: { firstName?: string; lastName?: string };
+    status?: string;
+    bookingType?: string;
+    planName?: string;
+  }
+
+  interface GroupedBooking {
+    kidId: string;
+    kidName: string;
+    planName: string;
+    slots: AdminBookingView[];
+  }
+
+  const groupBookings = (
+    list: AdminBookingView[],
+  ): Record<string, GroupedBooking> => {
+    return list.reduce(
+      (acc, slot) => {
+        const kidId = slot.kidId || slot.kid?.id || "unknown";
+        if (!acc[kidId]) {
+          acc[kidId] = {
+            kidId: String(kidId),
+            kidName: slot.kidName || slot.kid?.name || "Inconnu",
+            planName: slot.planName || "Régulier",
+            slots: [],
+          };
+        }
+        acc[kidId].slots.push(slot);
+        return acc;
+      },
+      {} as Record<string, GroupedBooking>,
+    );
+  };
+
+  const groupedRegular = groupBookings(pendingRegular);
+  const groupedAssignedRegular = groupBookings(assignedRegular);
+  const groupedHistoryRegular = groupBookings(historyRegular);
+
+  const filterGroups = (
+    groups: Record<string, GroupedBooking>,
+  ): GroupedBooking[] =>
+    Object.values(groups).filter(
+      (g) =>
+        g.kidName.toLowerCase().includes(search.toLowerCase()) ||
+        g.planName.toLowerCase().includes(search.toLowerCase()),
+    );
+
+  const filteredGroupedRegular = filterGroups(groupedRegular);
+  const filteredGroupedAssignedRegular = filterGroups(groupedAssignedRegular);
+  const filteredGroupedHistoryRegular = filterGroups(groupedHistoryRegular);
+
+  const filterTrial = (list: AdminBookingView[]) =>
+    list.filter((view) => {
+      return (
+        (view.kidName || view.kid?.name || "")
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (view.date || view.sessionDate || "").includes(search)
+      );
+    });
+
+  const filteredPendingTrial = filterTrial(pendingTrial);
+  const filteredAssignedTrial = filterTrial(assignedTrial);
+  const filteredHistoryTrial = filterTrial(historyTrial);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -335,9 +576,10 @@ const AdminBookings: React.FC = () => {
     if (!batchTeacherId || selectedIds.size === 0) return;
     setBatchAssigning(true);
     try {
+      const type = tab === "trial" ? "FREE_TRIAL" : "REGULAR";
       await adminService.batchAssign(
         Array.from(selectedIds),
-        "regular",
+        type,
         Number(batchTeacherId),
       );
       setSelectedIds(new Set());
@@ -350,7 +592,11 @@ const AdminBookings: React.FC = () => {
     }
   };
 
-  const handleUnassign = async (id: string | number, type: string) => {
+  const handleUnassign = async (id: string | number, type?: string) => {
+    if (!type) {
+      setError("Type de réservation manquant pour la désassignation");
+      return;
+    }
     if (!window.confirm("Êtes-vous sûr de vouloir désassigner le professeur ?"))
       return;
     setLoading(true);
@@ -404,10 +650,16 @@ const AdminBookings: React.FC = () => {
           {(
             [
               {
-                id: "pending",
-                label: "En attente",
+                id: "regular",
+                label: "Régulier",
                 icon: Clock,
-                count: pending.length,
+                count: pendingRegular.length,
+              },
+              {
+                id: "trial",
+                label: "Essai Gratuit",
+                icon: Star,
+                count: pendingTrial.length,
               },
               {
                 id: "assigned",
@@ -417,7 +669,7 @@ const AdminBookings: React.FC = () => {
               },
               {
                 id: "history",
-                label: "Historique d'assignation",
+                label: "Historique",
                 icon: RefreshCw,
                 count: history.length,
               },
@@ -445,37 +697,83 @@ const AdminBookings: React.FC = () => {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/30" />
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-slate-200 bg-white rounded-xl pl-9 pr-4 py-2 text-sm font-medium text-navy focus:outline-none focus:border-blue/50 transition-colors"
-          />
+        {/* Search & Sub-tabs */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/30" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full border border-slate-200 bg-white rounded-xl pl-9 pr-4 py-2 text-sm font-medium text-navy focus:outline-none focus:border-blue/50 transition-colors"
+            />
+          </div>
+
+          {(tab === "assigned" || tab === "history") && (
+            <div className="flex gap-2 bg-slate-100 p-1 rounded-xl w-fit">
+              <button
+                onClick={() => setSubTab("regular")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  subTab === "regular"
+                    ? "bg-white text-navy shadow-sm"
+                    : "text-navy/40 hover:text-navy"
+                }`}
+              >
+                Régulier
+                <span className="text-[10px] opacity-40">
+                  (
+                  {tab === "assigned"
+                    ? assignedRegular.length
+                    : historyRegular.length}
+                  )
+                </span>
+              </button>
+              <button
+                onClick={() => setSubTab("trial")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  subTab === "trial"
+                    ? "bg-white text-navy shadow-sm"
+                    : "text-navy/40 hover:text-navy"
+                }`}
+              >
+                Essai Gratuit
+                <span className="text-[10px] opacity-40">
+                  (
+                  {tab === "assigned"
+                    ? assignedTrial.length
+                    : historyTrial.length}
+                  )
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Batch assign bar */}
-        {tab === "pending" && selectedIds.size > 0 && (
+        {(tab === "regular" || tab === "trial") && selectedIds.size > 0 && (
           <div className="bg-blue/5 border border-blue/20 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
             <span className="text-sm font-bold text-blue">
               {selectedIds.size} sélectionné(s)
             </span>
-            <input
-              type="number"
-              placeholder="ID Professeur"
+            <select
               value={batchTeacherId}
               onChange={(e) => setBatchTeacherId(e.target.value)}
               className="border border-blue/20 bg-white rounded-xl px-3 py-1.5 text-sm font-medium text-navy focus:outline-none"
-            />
+            >
+              <option value="">Sélectionner un professeur</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.firstName} {t.lastName}
+                </option>
+              ))}
+            </select>
             <button
               onClick={handleBatchAssign}
               disabled={!batchTeacherId || batchAssigning}
               className="bg-blue text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-deepBlue transition-colors disabled:opacity-50"
             >
-              {batchAssigning ? "Assignation..." : "Assigner"}
+              {batchAssigning ? "Assignation..." : "Assigner Tout"}
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
@@ -486,265 +784,378 @@ const AdminBookings: React.FC = () => {
           </div>
         )}
 
-        {/* Table */}
+        {/* Table Content */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue" />
             </div>
-          ) : tab === "pending" ? (
-            filteredPending.length === 0 ? (
-              <div className="text-center py-16 text-navy/30">
-                <CalendarCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-bold">Aucun créneau en attente</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-100">
-                  <tr>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b border-slate-100">
+                <tr>
+                  {(tab === "regular" || tab === "trial") && (
                     <th className="px-4 py-3 w-10" />
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Date
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Heure
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Type
-                    </th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPending.map((s) => (
-                    <tr
-                      key={String(s.id)}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
-                    >
-                      <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(String(s.id))}
-                          onChange={() => toggleSelect(String(s.id))}
-                          className="rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-navy">
-                        {s.date}
-                      </td>
-                      <td className="px-4 py-3 text-navy/60">{s.time}</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-orange/10 text-orange text-[10px] font-black uppercase tracking-wider rounded-lg">
-                          {s.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setDetailsBookingId(String(s.id))}
-                            className="bg-slate-100 text-slate-500 hover:bg-slate-200 text-xs font-black p-1.5 rounded-xl transition-all"
-                            title="Détails"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setSelectedSlot(s)}
-                            className="bg-blue/10 text-blue hover:bg-blue hover:text-white text-xs font-black px-3 py-1.5 rounded-xl transition-all"
-                          >
-                            Assigner
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )
-          ) : tab === "assigned" ? (
-            filteredAssigned.length === 0 ? (
-              <div className="text-center py-16 text-navy/30">
-                <CheckCircle2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-bold">Aucune réservation assignée</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-100">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Date
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Heure
-                    </th>
+                  )}
+                  {((tab === "regular" ||
+                    tab === "assigned" ||
+                    tab === "history") &&
+                    subTab === "regular") ||
+                  tab === "regular" ? (
+                    <>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
+                        Enfant
+                      </th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
+                        Plan
+                      </th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
+                        Séances
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
+                        Date / Heure
+                      </th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
+                        Enfant
+                      </th>
+                    </>
+                  )}
+                  {(tab === "assigned" || tab === "history") && (
                     <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
                       Professeur
                     </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Enfant
-                    </th>
+                  )}
+                  {tab === "history" && (
                     <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
                       Statut
                     </th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAssigned.map((a) => (
-                    <tr
-                      key={a.id}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
-                    >
-                      <td className="px-4 py-3 font-semibold text-navy">
-                        {a.sessionDate ?? a.date ?? "—"}
+                  )}
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {/* Regular Unassigned Section */}
+                {tab === "regular" &&
+                  (filteredGroupedRegular.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Aucun abonnement en attente
                       </td>
-                      <td className="px-4 py-3 text-navy/60">{a.startTime}</td>
-                      <td className="px-4 py-3 text-navy/80 font-medium">
-                        {a.teacher
-                          ? `${a.teacher.firstName ?? ""} ${a.teacher.lastName ?? ""}`.trim() ||
-                            a.teacher.email
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-navy/60">
-                        {a.kid?.name ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg ${
-                            statusColor[a.status] ??
-                            "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {a.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                    </tr>
+                  ) : (
+                    filteredGroupedRegular.map((g: GroupedBooking) => (
+                      <tr
+                        key={g.kidId}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={g.slots.every((s: AdminBookingView) =>
+                              selectedIds.has(String(s.id)),
+                            )}
+                            onChange={() => {
+                              const allSel = g.slots.every(
+                                (s: AdminBookingView) =>
+                                  selectedIds.has(String(s.id)),
+                              );
+                              const next = new Set(selectedIds);
+                              g.slots.forEach((s: AdminBookingView) =>
+                                allSel
+                                  ? next.delete(String(s.id))
+                                  : next.add(String(s.id)),
+                              );
+                              setSelectedIds(next);
+                            }}
+                            className="rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {g.kidName}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-blue/5 text-blue text-[10px] font-black uppercase tracking-wider rounded-lg border border-blue/10">
+                            {g.planName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-navy/60 font-medium text-xs">
+                          {g.slots.length} séances
+                        </td>
+                        <td className="px-4 py-3 text-right">
                           <button
-                            onClick={() => setDetailsBookingId(String(a.id))}
-                            className="bg-slate-100 text-slate-500 hover:bg-slate-200 text-xs font-black p-1.5 rounded-xl transition-all"
-                            title="Détails"
+                            onClick={() =>
+                              setDetailsBookingId(String(g.slots[0].id))
+                            }
+                            className="bg-slate-100 text-navy hover:bg-slate-200 text-xs font-black px-4 py-2 rounded-xl transition-all"
+                          >
+                            Détails
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+
+                {/* Free Trial Unassigned Section */}
+                {tab === "trial" &&
+                  (filteredPendingTrial.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Aucun essai en attente
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPendingTrial.map((s: AdminBookingView) => (
+                      <tr
+                        key={String(s.id)}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(String(s.id))}
+                            onChange={() => toggleSelect(String(s.id))}
+                            className="rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-navy">{s.date}</p>
+                          <p className="text-xs text-navy/40">{s.time}</p>
+                        </td>
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {s.kidName}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setSelectedSlot(s as BookedSlot)}
+                            className="bg-blue text-white text-xs font-black px-4 py-2 rounded-xl"
+                          >
+                            Assigner
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+
+                {/* Assigned Section */}
+                {tab === "assigned" &&
+                  subTab === "regular" &&
+                  (filteredGroupedAssignedRegular.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Aucun assigné régulier
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredGroupedAssignedRegular.map((g: GroupedBooking) => (
+                      <tr
+                        key={g.kidId}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {g.kidName}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-blue/5 text-blue text-[10px] font-black uppercase tracking-wider rounded-lg border border-blue/10">
+                            {g.planName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-navy/60 font-medium text-xs">
+                          {g.slots.length} séances
+                        </td>
+                        <td className="px-4 py-3 text-navy font-bold">
+                          {g.slots[0].teacher?.firstName}{" "}
+                          {g.slots[0].teacher?.lastName}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() =>
+                              setDetailsBookingId(String(g.slots[0].id))
+                            }
+                            className="bg-slate-100 text-navy hover:bg-slate-200 text-xs font-black px-4 py-2 rounded-xl transition-all"
+                          >
+                            Détails
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+
+                {tab === "assigned" &&
+                  subTab === "trial" &&
+                  (filteredAssignedTrial.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Aucun essai assigné
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAssignedTrial.map((s: AdminBookingView) => (
+                      <tr
+                        key={String(s.id)}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-navy">
+                            {s.date || s.sessionDate}
+                          </p>
+                          <p className="text-xs text-navy/40">
+                            {s.startTime || s.time}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {s.kidName || s.kid?.name}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {s.teacher?.firstName} {s.teacher?.lastName}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleUnassign(s.id, s.type)}
+                              className="text-red-500 hover:text-red-700 font-bold text-[10px] uppercase"
+                            >
+                              Désassigner
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+
+                {/* History Section */}
+                {tab === "history" &&
+                  subTab === "regular" &&
+                  (filteredGroupedHistoryRegular.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Historique vide
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredGroupedHistoryRegular.map((g: GroupedBooking) => (
+                      <tr
+                        key={g.kidId}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {g.kidName}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                            {g.planName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-navy/60 font-medium text-xs">
+                          {g.slots.length} séances
+                        </td>
+                        <td className="px-4 py-3 text-navy/60">
+                          {g.slots[0].teacher?.firstName}{" "}
+                          {g.slots[0].teacher?.lastName || "N/A"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${statusColor[g.slots[0].status || ""] || "bg-slate-100 text-slate-500"}`}
+                          >
+                            {g.slots[0].status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() =>
+                              setDetailsBookingId(String(g.slots[0].id))
+                            }
+                            className="text-navy hover:text-blue transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() =>
-                              handleUnassign(a.id, a.type || "regular")
-                            }
-                            className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white text-xs font-black px-3 py-1.5 rounded-xl transition-all"
-                          >
-                            Désassigner
-                          </button>
-                          <button
-                            onClick={() =>
-                              setSelectedSlot({
-                                id: a.id,
-                                date: a.sessionDate ?? a.date ?? "",
-                                time: a.startTime,
-                                type: a.type || "regular",
-                              })
-                            }
-                            className="bg-blue/10 text-blue hover:bg-blue hover:text-white text-xs font-black px-3 py-1.5 rounded-xl transition-all"
-                          >
-                            Réassigner
-                          </button>
-                        </div>
+                        </td>
+                      </tr>
+                    ))
+                  ))}
+
+                {tab === "history" &&
+                  subTab === "trial" &&
+                  (filteredHistoryTrial.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-16 text-navy/30"
+                      >
+                        Historique essai vide
                       </td>
                     </tr>
+                  ) : (
+                    filteredHistoryTrial.map((s: AdminBookingView) => (
+                      <tr
+                        key={String(s.id)}
+                        className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-navy">
+                            {s.date || s.sessionDate}
+                          </p>
+                          <p className="text-xs text-navy/40">
+                            {s.time || s.startTime}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 font-bold text-navy">
+                          {s.kidName || s.kid?.name}
+                        </td>
+                        <td className="px-4 py-3">
+                          {s.teacher?.firstName} {s.teacher?.lastName || "N/A"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${statusColor[s.status || ""] || "bg-slate-100 text-slate-500"}`}
+                          >
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right" />
+                      </tr>
+                    ))
                   ))}
-                </tbody>
-              </table>
-            )
-          ) : tab === "history" ? (
-            history.length === 0 ? (
-              <div className="text-center py-16 text-navy/30">
-                <RefreshCw className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-bold">Aucun historique d'assignation</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-100">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Date
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Type
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Action
-                    </th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-navy/40 uppercase tracking-widest">
-                      Admin
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((h) => (
-                    <tr
-                      key={h.id}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
-                    >
-                      <td className="px-4 py-3 font-semibold text-navy">
-                        {new Date(h.createdAt).toLocaleString("fr-FR")}
-                      </td>
-                      <td className="px-4 py-3 text-navy/60">
-                        {h.bookingType === "REGULAR"
-                          ? "Régulier"
-                          : "Essai Libre"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {h.newTeacherId === null ? (
-                          <span className="text-red-600 font-medium text-xs bg-red-50 px-2 py-1 rounded">
-                            Désassigné (Ancien:{" "}
-                            {h.previousTeacherName || h.previousTeacherId})
-                          </span>
-                        ) : h.previousTeacherId === null ? (
-                          <span className="text-green-600 font-medium text-xs bg-green-50 px-2 py-1 rounded">
-                            Assigné (Nouveau:{" "}
-                            {h.newTeacherName || h.newTeacherId})
-                          </span>
-                        ) : (
-                          <span className="text-blue font-medium text-xs bg-blue/10 px-2 py-1 rounded">
-                            Réassigné (
-                            {h.previousTeacherName || h.previousTeacherId} →{" "}
-                            {h.newTeacherName || h.newTeacherId})
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-navy/60 font-medium">
-                        {h.assignedByName}{" "}
-                        <span className="text-xs text-navy/40">
-                          ({h.assignedByRole})
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )
-          ) : null}
+              </tbody>
+            </table>
+          )}
         </div>
+
+        {selectedSlot && (
+          <AssignModal
+            slot={selectedSlot}
+            onClose={() => setSelectedSlot(null)}
+            onAssigned={() => {
+              setSelectedSlot(null);
+              fetchData();
+            }}
+          />
+        )}
+        {detailsBookingId && (
+          <BookingDetailsModal
+            bookingId={detailsBookingId}
+            onClose={() => setDetailsBookingId(null)}
+            onRefresh={fetchData}
+          />
+        )}
       </div>
-
-      {/* Assign modal */}
-      {selectedSlot && (
-        <AssignModal
-          slot={selectedSlot}
-          onClose={() => setSelectedSlot(null)}
-          onAssigned={() => {
-            setSelectedSlot(null);
-            fetchData();
-          }}
-        />
-      )}
-
-      {/* Booking Details modal */}
-      {detailsBookingId && (
-        <BookingDetailsModal
-          bookingId={detailsBookingId}
-          onClose={() => setDetailsBookingId(null)}
-        />
-      )}
     </AdminLayout>
   );
 };

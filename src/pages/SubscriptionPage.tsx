@@ -5,7 +5,6 @@ import { Check, ArrowLeft, Zap, Star, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContextDefinition";
 import { Button } from "../components/ui/Button";
 import { subscriptionService } from "../services/subscription.service";
-import { paymentService } from "../services/payment.service";
 
 interface PricingPlan {
   duration: number;
@@ -143,14 +142,13 @@ export const SubscriptionPage: React.FC = () => {
         pricePerMonth: plan.pricePerMonth[commitment],
       });
 
-      // After creating the subscription (which is now PENDING_PAYMENT),
-      // create a Stripe checkout session
-      const { url } = await paymentService.createCheckoutSession(
-        subscription.id,
-      );
-
-      // Redirect to Stripe
-      window.location.href = url;
+      // Redirect to booking calendar after successful subscription
+      navigate(`/book-classes?subscriptionId=${subscription.id}`, {
+        state: {
+          subscriptionSuccess: true,
+          planName: subscription.planName,
+        },
+      });
     } catch (error) {
       console.error("Subscription failed", error);
       alert("Une erreur est survenue lors de la souscription.");

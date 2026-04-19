@@ -11,7 +11,7 @@ import { type Unit, type Lesson, navy, blue } from "./LessonTypes";
 
 interface LessonListProps {
   units: Unit[];
-  onEdit: (l: Lesson) => void;
+  onEdit: (l: Lesson, unitId: string) => void;
   onDelete: (id: string) => void;
   lvlColor: string;
   lvlBg: string;
@@ -135,7 +135,7 @@ export const LessonList: React.FC<LessonListProps> = ({
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <button
-                            onClick={() => onEdit(l)}
+                            onClick={() => onEdit(l, u.id)}
                             className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
                             style={{
                               background: "rgba(33,158,188,0.08)",

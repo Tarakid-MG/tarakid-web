@@ -12,6 +12,21 @@ export const CalendarLegend: React.FC<CalendarLegendProps> = ({ editMode }) => {
       label: "Cours réservé",
     },
     {
+      bg: "rgba(16, 185, 129, 0.12)",
+      border: "#10b981",
+      label: "Terminé",
+    },
+    {
+      bg: "rgba(239,68,68,0.12)",
+      border: "#ef4444",
+      label: "Annulé",
+    },
+    {
+      bg: "rgba(148,163,184,0.12)",
+      border: "#94a3b8",
+      label: "Absence / Manqué",
+    },
+    {
       bg: "rgba(255,183,3,0.12)",
       border: "#FB8500",
       label: "Essai Gratuit",

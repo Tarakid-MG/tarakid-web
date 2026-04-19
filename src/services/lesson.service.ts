@@ -20,6 +20,11 @@ export interface Unit {
   lessons: Lesson[];
 }
 
+export interface KidLessonsResponse {
+  units: Unit[];
+  suggestedLessonId: string | null;
+}
+
 class LessonService {
   async getUnits(level: string): Promise<Unit[]> {
     try {
@@ -31,13 +36,16 @@ class LessonService {
     }
   }
 
-  async getLessonsByKidAndLevel(kidId: string, level: string): Promise<Unit[]> {
+  async getLessonsByKidAndLevel(
+    kidId: string,
+    level: string,
+  ): Promise<KidLessonsResponse> {
     try {
       const response = await api.get(`/lessons/kid/${kidId}/level/${level}`);
       return response.data;
     } catch (error) {
       console.error("Failed to fetch units for kid", error);
-      return [];
+      return { units: [], suggestedLessonId: null };
     }
   }
 

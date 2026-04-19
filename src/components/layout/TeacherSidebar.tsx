@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContextDefinition";
 import { Logo } from "../ui/Logo";
@@ -32,7 +33,7 @@ const menuItems = [
 ];
 
 export const TeacherSidebar: React.FC = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   return (
@@ -69,6 +70,23 @@ export const TeacherSidebar: React.FC = () => {
             style={{ color: "var(--color-lightBlue)" }}
           >
             Espace Enseignant
+          </span>
+        </div>
+
+        {/* Hearts display */}
+        <div
+          className="mt-3 flex items-center justify-between px-4 py-3 rounded-2xl"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+            <span className="text-xs font-bold text-white/70">Mes Vies</span>
+          </div>
+          <span className="text-sm font-black text-white">
+            {user?.hearts ?? 5}
           </span>
         </div>
       </div>

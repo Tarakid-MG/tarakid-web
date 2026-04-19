@@ -148,19 +148,34 @@ export const TeacherScheduleView: React.FC<TeacherScheduleViewProps> = ({
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-blue" />
               <span className="text-[10px] font-black uppercase tracking-wider text-navy/60">
-                Session Réservée
+                Prévu
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-teal/40 border border-teal/60" />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ background: "#22c55e" }}
+              />
               <span className="text-[10px] font-black uppercase tracking-wider text-navy/60">
-                Disponibilité
+                Terminé
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full border border-dashed border-slate-300" />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ background: "#ef4444" }}
+              />
               <span className="text-[10px] font-black uppercase tracking-wider text-navy/60">
-                Non ouvert
+                Annulé
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ background: "#94a3b8" }}
+              />
+              <span className="text-[10px] font-black uppercase tracking-wider text-navy/60">
+                Absence
               </span>
             </div>
           </div>
@@ -225,22 +240,79 @@ export const TeacherScheduleView: React.FC<TeacherScheduleViewProps> = ({
                         const content = getSlotContent(day, hour, min);
                         if (content?.type === "session") {
                           const s = content.data as Booking;
+
+                          const getStatusColors = (status: string) => {
+                            switch (status) {
+                              case "COMPLETED":
+                                return {
+                                  bg: "rgba(34,197,94,0.1)",
+                                  border: "rgba(34,197,94,0.2)",
+                                  borderLeft: "#22c55e",
+                                  text: "#14532d",
+                                };
+                              case "CANCELLED":
+                                return {
+                                  bg: "rgba(239,68,68,0.1)",
+                                  border: "rgba(239,68,68,0.2)",
+                                  borderLeft: "#ef4444",
+                                  text: "#7f1d1d",
+                                };
+                              case "MISSED":
+                              case "ABSENT":
+                                return {
+                                  bg: "rgba(148,163,184,0.1)",
+                                  border: "rgba(148,163,184,0.2)",
+                                  borderLeft: "#94a3b8",
+                                  text: "#1e293b",
+                                };
+                              default:
+                                return {
+                                  bg: "rgba(33,158,188,0.1)",
+                                  border: "rgba(33,158,188,0.2)",
+                                  borderLeft: "#219EBC",
+                                  text: "#023047",
+                                };
+                            }
+                          };
+
+                          const colors = getStatusColors(s.status);
+
                           return (
                             <div
                               key={min}
-                              className="flex-1 p-2 rounded-xl bg-blue/10 border border-blue/20 border-l-4 border-l-blue shadow-sm animate-in fade-in slide-in-from-top-1 duration-300"
+                              className="flex-1 p-2 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-1 duration-300"
+                              style={{
+                                background: colors.bg,
+                                border: `1px solid ${colors.border}`,
+                                borderLeft: `4px solid ${colors.borderLeft}`,
+                              }}
                             >
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black text-blue uppercase truncate">
+                                <span
+                                  className="text-[10px] font-black uppercase truncate"
+                                  style={{ color: colors.borderLeft }}
+                                >
                                   {s.kid?.name || "Élève"}
                                 </span>
-                                <span className="text-[8px] font-bold text-blue/60">
+                                <span
+                                  className="text-[8px] font-bold"
+                                  style={{
+                                    color: colors.borderLeft,
+                                    opacity: 0.6,
+                                  }}
+                                >
                                   {min}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5 opacity-60">
-                                <Clock className="w-2 h-2 text-blue" />
-                                <span className="text-[9px] font-bold text-navy">
+                                <Clock
+                                  className="w-2 h-2"
+                                  style={{ color: colors.borderLeft }}
+                                />
+                                <span
+                                  className="text-[9px] font-bold"
+                                  style={{ color: colors.text }}
+                                >
                                   {s.startTime.substring(0, 5)}
                                 </span>
                               </div>

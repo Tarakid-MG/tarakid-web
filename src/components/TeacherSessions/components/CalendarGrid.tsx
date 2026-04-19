@@ -1,9 +1,9 @@
 import React from "react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import { CheckSquare, Square, Lock, Check } from "lucide-react";
+import { CheckSquare, Square, Lock, Check, Video } from "lucide-react";
 import type { Session, SlotKey } from "../types";
-import { HOURS, MINUTES, isBlackout, toSlotKey } from "../utils";
+import { HOURS, MINUTES, isBlackout, toSlotKey, isJoinable } from "../utils";
 import type { TeacherAvailability } from "../../../services/booking.service";
 
 interface CalendarGridProps {
@@ -18,6 +18,7 @@ interface CalendarGridProps {
   handleSlotMouseEnter: (day: Date, hour: number, minute: string) => void;
   toggleSingleAvailability: (day: Date, hour: number, minute: string) => void;
   setSelectedSession: (session: Session) => void;
+  onEnterClassroom: (session: Session) => void;
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -32,6 +33,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   handleSlotMouseEnter,
   toggleSingleAvailability,
   setSelectedSession,
+  onEnterClassroom,
 }) => {
   const getSlotContent = (day: Date, hour: number, minute: string) => {
     const timeStr = `${hour.toString().padStart(2, "0")}:${minute}:00`;
@@ -211,24 +213,89 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                       if (isBooked) {
                         const session = content!.data as Session;
-                        const isTrial = session.type === "FREE_TRIAL";
+
+                        const getStatusColors = (s: Session) => {
+                          const status = s.status;
+                          const isTrial = s.type === "FREE_TRIAL";
+
+                          // Check if missed: past date/time AND not attended
+                          const sessionStart = new Date(
+                            `${s.sessionDate}T${s.startTime}`,
+                          );
+                          const isPast = sessionStart < new Date();
+                          const isMissed =
+                            isPast &&
+                            !s.isTeacherInClass &&
+                            status !== "COMPLETED" &&
+                            status !== "CANCELLED";
+
+                          if (isMissed || status === "MISSED") {
+                            return {
+                              bg: "rgba(239,68,68,0.08)",
+                              border: "rgba(239,68,68,0.3)",
+                              borderLeft: "#ef4444",
+                              text: "#991b1b",
+                            };
+                          }
+
+                          switch (status) {
+                            case "COMPLETED":
+                            case "DONE_BUT_MISSING":
+                              return {
+                                bg: "rgba(16, 185, 129, 0.12)",
+                                border: "rgba(16, 185, 129, 0.4)",
+                                borderLeft: "#10b981",
+                                text: "#064e3b",
+                              };
+                            case "CANCELLED":
+                              return {
+                                bg: "rgba(100,116,139,0.1)",
+                                border: "rgba(100,116,139,0.3)",
+                                borderLeft: "#64748b",
+                                text: "#334155",
+                              };
+                            case "ABSENT":
+                              return {
+                                bg: "rgba(148,163,184,0.12)",
+                                border: "rgba(148,163,184,0.4)",
+                                borderLeft: "#94a3b8",
+                                text: "#1e293b",
+                              };
+                            default: // SCHEDULED, CONFIRMED
+                              return {
+                                bg: isTrial
+                                  ? "rgba(255,183,3,0.12)"
+                                  : "rgba(33,158,188,0.12)",
+                                border: isTrial
+                                  ? "1.5px solid rgba(255,183,3,0.4)"
+                                  : "1.5px solid rgba(33,158,188,0.4)",
+                                borderLeft: isTrial ? "#FB8500" : "#219EBC",
+                                text: isTrial ? "#995C00" : "#023047",
+                              };
+                          }
+                        };
+
+                        const colors = getStatusColors(session);
+
                         return (
                           <button
                             key={min}
-                            onClick={() =>
-                              !editMode && setSelectedSession(session)
-                            }
+                            onClick={() => {
+                              if (!editMode) {
+                                if (isJoinable(session)) {
+                                  onEnterClassroom(session);
+                                } else {
+                                  setSelectedSession(session);
+                                }
+                              }
+                            }}
                             className="flex-1 p-2 rounded-xl text-left transition-all hover:brightness-[0.98] active:scale-[0.98] group relative overflow-hidden"
                             style={{
                               minHeight: "44px",
-                              background: isTrial
-                                ? "rgba(255,183,3,0.12)"
-                                : "rgba(33,158,188,0.12)",
-                              border: isTrial
-                                ? "1.5px solid rgba(255,183,3,0.4)"
-                                : "1.5px solid rgba(33,158,188,0.4)",
+                              background: colors.bg,
+                              border: colors.border,
                               borderLeftWidth: "4px",
-                              borderLeftColor: isTrial ? "#FB8500" : "#219EBC",
+                              borderLeftColor: colors.borderLeft,
                               cursor: editMode ? "not-allowed" : "pointer",
                               opacity: editMode ? 0.7 : 1,
                             }}
@@ -238,28 +305,34 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                 <p
                                   className="text-[12px] font-black truncate leading-tight uppercase tracking-tight"
                                   style={{
-                                    color: isTrial ? "#995C00" : "#023047",
+                                    color: colors.text,
                                   }}
                                 >
                                   {session.kid.name}
                                 </p>
-                                <span
-                                  className="text-[9px] font-black opacity-60 shrink-0"
-                                  style={{
-                                    color: isTrial ? "#995C00" : "#023047",
-                                  }}
-                                >
-                                  {min}:00
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {isJoinable(session) && (
+                                    <Video
+                                      className="w-3 h-3 text-white animate-pulse"
+                                      style={{ color: colors.borderLeft }}
+                                    />
+                                  )}
+                                  <span
+                                    className="text-[9px] font-black opacity-60 shrink-0"
+                                    style={{
+                                      color: colors.text,
+                                    }}
+                                  >
+                                    {min}:00
+                                  </span>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span
                                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase"
                                   style={{
-                                    background: isTrial
-                                      ? "rgba(251,133,0,0.15)"
-                                      : "rgba(33,158,188,0.15)",
-                                    color: isTrial ? "#FB8500" : "#219EBC",
+                                    background: colors.bg,
+                                    color: colors.borderLeft,
                                   }}
                                 >
                                   {session.kid.level}
@@ -267,7 +340,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                 <span
                                   className="text-[10px] font-bold italic opacity-70"
                                   style={{
-                                    color: isTrial ? "#995C00" : "#023047",
+                                    color: colors.text,
                                   }}
                                 >
                                   {session.kid.age} ans

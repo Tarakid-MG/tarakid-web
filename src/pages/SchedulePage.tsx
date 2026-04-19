@@ -17,6 +17,7 @@ import {
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
+import ReportBookingModal from "../components/ui/ReportBookingModal";
 import type {
   Booking,
   Subscription,
@@ -73,6 +74,7 @@ const SchedulePage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<ScheduleItem | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [reportPending, setReportPending] = useState<ScheduleItem | null>(null);
 
   const selectedKidObj: Kid | undefined = useMemo(() => {
     if (!user?.kids || !selectedKidId) return undefined;
@@ -412,6 +414,16 @@ const SchedulePage: React.FC = () => {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      setActiveMenuId(null);
+                                      setReportPending(booking);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-orange hover:bg-orange/5 font-medium transition-colors"
+                                  >
+                                    Reporter le cours
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleAction(booking);
                                     }}
                                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors"
@@ -521,6 +533,21 @@ const SchedulePage: React.FC = () => {
           )}
         </section>
       </main>
+
+      {/* Report Booking Modal */}
+      {reportPending && (
+        <ReportBookingModal
+          isOpen={!!reportPending}
+          onClose={() => {
+            setReportPending(null);
+            fetchData();
+          }}
+          bookingId={reportPending.id}
+          bookingType={reportPending.type}
+          userId={user?.id || 0}
+          kidId={selectedKidId?.toString()}
+        />
+      )}
     </div>
   );
 };

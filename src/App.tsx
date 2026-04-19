@@ -21,6 +21,7 @@ import KidDashboard from "./pages/KidDashboard";
 import QuizGuard from "./components/auth/QuizGuard";
 import SchedulePage from "./pages/SchedulePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import HistoryPage from "./pages/HistoryPage";
 import BookingCalendarPage from "./pages/BookingCalendarPage";
 import LessonsPage from "./pages/LessonsPage";
 import LessonPlayerPage from "./pages/LessonPlayerPage";
@@ -59,6 +60,10 @@ const AppRoutes = () => {
           /* Kid Mode Routes - Restricted set when active */
           <>
             <Route
+              path="/classroom/:bookingId"
+              element={<ClassroomWrapper />}
+            />
+            <Route
               path="/kid-dashboard"
               element={
                 <QuizGuard>
@@ -81,10 +86,6 @@ const AppRoutes = () => {
                   <LessonPlayerPage />
                 </QuizGuard>
               }
-            />
-            <Route
-              path="/classroom/:bookingId"
-              element={<ClassroomWrapper />}
             />
             {/* Redirect any other path to kid dashboard in kid mode */}
             <Route
@@ -136,6 +137,14 @@ const AppRoutes = () => {
               }
             />
             <Route
+              path="/history"
+              element={
+                <QuizGuard>
+                  <HistoryPage />
+                </QuizGuard>
+              }
+            />
+            <Route
               path="/book-classes"
               element={
                 <QuizGuard>
@@ -174,6 +183,11 @@ const AppRoutes = () => {
                   <TeacherSessions />
                 </TeacherGuard>
               }
+            />
+
+            <Route
+              path="/classroom/:bookingId"
+              element={<ClassroomWrapper />}
             />
 
             {/* Admin Routes */}

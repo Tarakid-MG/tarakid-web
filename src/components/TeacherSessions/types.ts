@@ -6,6 +6,9 @@ export interface Session {
   status: string;
   kid: { id: string; name: string; age: number; level: string };
   type?: "REGULAR" | "FREE_TRIAL";
+  isTeacherInClass?: boolean;
+  lesson?: { id: string; title: string; order: number } | null;
+  suggestedLesson?: { id: string; title: string; order: number } | null;
 }
 
 export type SlotKey = string; // "YYYY-MM-DD|HH:MM"

@@ -13,8 +13,14 @@ import {
   Menu,
   Layers,
   Users,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContextDefinition";
+import {
+  notificationService,
+  type AppNotification,
+} from "../../services/notification.service";
+import { useEffect } from "react";
 
 const navItems = [
   {
@@ -63,6 +69,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    notificationService
+      .getMyNotifications()
+      .then(setNotifications)
+      .catch(console.error);
+    const interval = setInterval(() => {
+      notificationService
+        .getMyNotifications()
+        .then(setNotifications)
+        .catch(console.error);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkRead = async (id: number) => {
+    await notificationService.markAsRead(id);
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+    );
+  };
 
   const handleLogout = () => {
     logout();
@@ -193,6 +224,66 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <span>Admin Panel</span>
           </div>
           <div className="flex items-center gap-3">
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-navy/40 hover:text-blue hover:border-blue/30 transition-all relative"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-lg flex items-center justify-center border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h4 className="font-black text-navy text-sm">
+                      Notifications
+                    </h4>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={async () => {
+                          await notificationService.markAllAsRead();
+                          setNotifications((prev) =>
+                            prev.map((n) => ({ ...n, isRead: true })),
+                          );
+                        }}
+                        className="text-[10px] font-bold text-blue hover:underline"
+                      >
+                        Tout lire
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-navy/30">
+                        <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-xs font-bold">Aucune notification</p>
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => handleMarkRead(n.id)}
+                          className={`p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer ${!n.isRead ? "bg-blue/5" : ""}`}
+                        >
+                          <p className="text-xs font-semibold text-navy leading-relaxed">
+                            {n.message}
+                          </p>
+                          <p className="text-[10px] text-navy/30 mt-1 font-bold">
+                            {new Date(n.createdAt).toLocaleString("fr-FR")}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <span className="text-xs font-bold text-navy/40 hidden sm:block">
               {user?.email}
             </span>

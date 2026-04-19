@@ -58,6 +58,10 @@ export interface BookedSlot {
   date: string;
   time: string;
   type: string;
+  kidName?: string;
+  planName?: string;
+  kidId?: string;
+  subscriptionId?: string;
   isActive?: boolean;
 }
 
@@ -70,6 +74,9 @@ export interface AssignedBooking {
   startTime: string;
   status: string;
   type?: string;
+  kidName?: string;
+  planName?: string;
+  subscriptionId?: string;
   teacher?: {
     id: number;
     firstName?: string;
@@ -96,6 +103,11 @@ export interface BookingDetails {
     level: string;
     englishReadingLevel: string;
     englishSpeakingLevel: string;
+    assignedTeacher?: {
+      id: number;
+      firstName?: string;
+      lastName?: string;
+    };
   };
   parent?: {
     id: number;
@@ -104,6 +116,33 @@ export interface BookingDetails {
     lastName?: string;
     phoneNumber?: string;
   };
+  subscription?: {
+    id: string;
+    planName: string;
+    frequency: number;
+    commitmentType: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+  };
+  upcomingSessions?: {
+    id: string | number;
+    date: string;
+    time: string;
+    teacherId?: number;
+  }[];
+}
+
+export type NotificationType = "CANCELLED" | "REPORTED" | "ASSIGNED";
+
+export interface AppNotification {
+  id: number;
+  userId: number;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  bookingId?: string;
+  createdAt: string;
 }
 
 export interface BookingAssignmentHistory {

@@ -139,6 +139,7 @@ const AdminClients: React.FC = () => {
         <ClientDetails
           client={selectedClient}
           onClose={() => setSelectedClient(null)}
+          onRefresh={fetchClients}
         />
       )}
     </AdminLayout>

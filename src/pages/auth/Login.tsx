@@ -95,6 +95,7 @@ const Login: React.FC = () => {
         navigate("/teacher/dashboard");
       } else if (user.kids && user.kids.length > 0) {
         // User has kids - check if they have bookings
+        console.log(user);
         if (user.bookings && user.bookings.length > 0) {
           // Has bookings, go to dashboard
           navigate("/dashboard");

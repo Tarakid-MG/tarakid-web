@@ -23,6 +23,9 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
 }) => {
   const { selectedKid } = useKidMode();
   const [units, setUnits] = useState<Unit[]>([]);
+  const [suggestedLessonId, setSuggestedLessonId] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +36,8 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
           selectedKid.id,
           selectedKid.level,
         );
-        setUnits(data);
+        setUnits(data.units);
+        setSuggestedLessonId(data.suggestedLessonId);
       } catch (error) {
         console.error("Failed to fetch units:", error);
       } finally {
@@ -79,7 +83,7 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
           </div>
         ) : (
           <div className="max-w-8xl mx-auto space-y-12">
-            {units.map((unit: Unit) => (
+            {units?.map((unit: Unit) => (
               <div key={unit.id} className="space-y-6">
                 <div className="flex items-center gap-4">
                   <span className="h-2 w-12 bg-teal rounded-full" />
@@ -104,7 +108,7 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
                         const dynamicThumb = `/thumbnailImage/${levelDigit}${unit.order}${lesson.order}.png`;
                         const finalLesson = {
                           ...lesson,
-                          thumbnailUrl: dynamicThumb,
+                          thumbnailUrl: lesson.thumbnailUrl || dynamicThumb,
                         };
 
                         onSelectLesson(finalLesson);
@@ -123,7 +127,9 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
                               selectedKid?.level?.replace("L", "") || "0";
                             const unitOrder = unit.order;
                             const lessonOrder = lesson.order;
-                            const dynamicThumb = `/thumbnailImage/${levelDigit}${unitOrder}${lessonOrder}.png`;
+                            const dynamicThumb =
+                              lesson.thumbnailUrl ||
+                              `/thumbnailImage/${levelDigit}${unitOrder}${lessonOrder}.png`;
 
                             return (
                               <img
@@ -205,11 +211,17 @@ export const LessonSelection: React.FC<LessonSelectionProps> = ({
                       </div>
 
                       {/* Ribbon decor */}
-                      {lesson.order === 1 && (
-                        <div className="absolute top-4 left-4 bg-yellow text-navy text-[10px] font-black px-3 py-1 rounded-lg border-2 border-white shadow-sm -rotate-6">
-                          NOUVEAU
+                      {lesson.id === suggestedLessonId && (
+                        <div className="absolute top-4 left-4 bg-yellow text-navy text-[10px] font-black px-3 py-1 rounded-lg border-2 border-white shadow-sm -rotate-6 z-10 animate-bounce">
+                          VOTRE PROCHAINE LEÇON
                         </div>
                       )}
+                      {lesson.order === 1 &&
+                        lesson.id !== suggestedLessonId && (
+                          <div className="absolute top-4 left-4 bg-yellow text-navy text-[10px] font-black px-3 py-1 rounded-lg border-2 border-white shadow-sm -rotate-6">
+                            NOUVEAU
+                          </div>
+                        )}
                     </button>
                   ))}
                 </div>

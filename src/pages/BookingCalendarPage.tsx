@@ -123,10 +123,12 @@ const BookingCalendarPage: React.FC = () => {
       }
 
       try {
-        const [sub, availabilityData, dates] = await Promise.all([
-          subscriptionService.getSubscription(subscriptionId),
-          bookingService.getGlobalAvailability(),
-          bookingService.getAvailableDates(12),
+        const sub = await subscriptionService.getSubscription(subscriptionId);
+        const assignedTeacherId = sub.kid?.assignedTeacherId;
+
+        const [availabilityData, dates] = await Promise.all([
+          bookingService.getGlobalAvailability(assignedTeacherId),
+          bookingService.getAvailableDates(12, assignedTeacherId),
         ]);
 
         setSubscription(sub);
@@ -489,6 +491,15 @@ const BookingCalendarPage: React.FC = () => {
               <p className="text-lg text-navy/60 font-medium">
                 Configurez les horaires préférés pour les prochaines semaines.
               </p>
+              {subscription.kid?.assignedTeacher && (
+                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue/5 border border-blue/10 rounded-xl text-blue text-sm font-bold">
+                  <Sparkles className="w-4 h-4" />
+                  Professeur dédié: {
+                    subscription.kid.assignedTeacher.firstName
+                  }{" "}
+                  {subscription.kid.assignedTeacher.lastName}
+                </div>
+              )}
             </div>
 
             <Card className="p-4 bg-white border-none shadow-lg shadow-blue/5 flex items-center gap-6">

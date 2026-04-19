@@ -143,21 +143,103 @@ export const bookingService = {
     return response.data;
   },
 
-  async getGlobalAvailability(): Promise<GlobalAvailability> {
+  async cancelTeacherSession(
+    id: string,
+  ): Promise<{ success: boolean; penaltyApplied: boolean }> {
+    const response = await api.patch<{
+      success: boolean;
+      penaltyApplied: boolean;
+    }>(`/bookings/teacher/${id}/cancel`);
+    return response.data;
+  },
+
+  async assignLesson(bookingId: string, lessonId: string): Promise<any> {
+    const response = await api.patch(`/bookings/teacher/${bookingId}/lesson`, {
+      lessonId,
+    });
+    return response.data;
+  },
+
+  async getGlobalAvailability(teacherId?: number): Promise<GlobalAvailability> {
     const response = await api.get<GlobalAvailability>(
       "/bookings/availability",
+      { params: { teacherId } },
     );
     return response.data;
   },
 
   async getAvailableDates(
     months: number = 2,
+    teacherId?: number,
   ): Promise<{ available: string[]; full: string[] }> {
     const response = await api.get<{ available: string[]; full: string[] }>(
       "/bookings/available-dates",
       {
-        params: { months },
+        params: { months, teacherId },
       },
+    );
+    return response.data;
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // CLASSROOM FLOW
+  // ────────────────────────────────────────────────────────────────────────
+
+  async getClassroomStatus(id: string): Promise<Booking> {
+    const response = await api.get<Booking>(`/bookings/${id}/classroom-status`);
+    return response.data;
+  },
+
+  async updateWaitingStatus(
+    id: string,
+    isKidWaiting: boolean,
+  ): Promise<Booking> {
+    const response = await api.patch<Booking>(
+      `/bookings/${id}/waiting-status`,
+      {
+        isKidWaiting,
+      },
+    );
+    return response.data;
+  },
+
+  // Teacher side
+  async getTeacherClassroomStatus(id: string): Promise<Booking> {
+    const response = await api.get<Booking>(
+      `/bookings/teacher/${id}/classroom-status`,
+    );
+    return response.data;
+  },
+
+  async updateAcceptanceStatus(
+    id: string,
+    isKidAccepted: boolean,
+  ): Promise<Booking> {
+    const response = await api.patch<Booking>(
+      `/bookings/teacher/${id}/acceptance-status`,
+      { isKidAccepted },
+    );
+    return response.data;
+  },
+
+  async updatePresenceStatus(
+    id: string,
+    isTeacherInClass: boolean,
+  ): Promise<Booking> {
+    const response = await api.patch<Booking>(
+      `/bookings/teacher/${id}/presence`,
+      { isTeacherInClass },
+    );
+    return response.data;
+  },
+
+  async updateInteractionData(
+    id: string,
+    interactionData: string,
+  ): Promise<Booking> {
+    const response = await api.patch<Booking>(
+      `/bookings/teacher/${id}/interaction`,
+      { interactionData },
     );
     return response.data;
   },

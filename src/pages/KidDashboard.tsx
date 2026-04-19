@@ -30,11 +30,15 @@ type UnifiedBooking = (FreeTrialBooking | Booking) & {
   date: string;
   startTime: string;
   type: "FREE_TRIAL" | "REGULAR";
+  isKidWaiting?: boolean;
+  isKidAccepted?: boolean;
+  isTeacherInClass?: boolean;
 };
 
 function formatNextClassFR(date?: string, start?: string) {
   if (!date || !start) return "Aucun cours prévu";
-  const d = new Date(`${date}T${start}`);
+  const d = parseSafeDateTime(date, start);
+  if (isNaN(d.getTime())) return "Format date invalide";
   return d.toLocaleDateString("fr-FR", {
     weekday: "short",
     day: "numeric",
@@ -42,6 +46,12 @@ function formatNextClassFR(date?: string, start?: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function parseSafeDateTime(date: string, time: string) {
+  const dPart = date.includes("T") ? date.split("T")[0] : date;
+  const tPart = time.substring(0, 5);
+  return new Date(`${dPart}T${tPart}:00`);
 }
 
 const KidDashboard: React.FC = () => {
@@ -92,40 +102,55 @@ const KidDashboard: React.FC = () => {
           bookingService.getKidBookings(selectedKid.id.toString()),
         ]);
 
-        const kidFreeTrials = freeTrialBookings.filter(
-          (b) =>
-            String(b.kidId) === String(selectedKid.id) &&
-            b.status === "CONFIRMED",
-        );
-        const kidRegulars = regularBookings.filter(
-          (b) => b.status === "SCHEDULED",
-        );
+        const kidFreeTrials = freeTrialBookings
+          .filter(
+            (b) =>
+              String(b.kidId) === String(selectedKid.id) &&
+              !["CANCELLED", "REPORTED", "COMPLETED"].includes(b.status),
+          )
+          .map((b) => ({
+            ...b,
+            id: `trial_${b.id}`,
+            date: b.session?.date,
+            startTime: b.session?.startTime,
+            type: "FREE_TRIAL" as const,
+          }));
 
-        const allUpcoming = (
-          [
-            ...kidFreeTrials.map((b) => ({
-              ...b,
-              date: b.session?.date,
-              startTime: b.session?.startTime,
-              type: "FREE_TRIAL" as const,
-            })),
-            ...kidRegulars.map((b) => ({
-              ...b,
-              date: b.sessionDate,
-              startTime: b.startTime,
-              type: "REGULAR" as const,
-            })),
-          ] as UnifiedBooking[]
+        const kidRegulars = regularBookings
+          .filter(
+            (b) => !["CANCELLED", "REPORTED", "COMPLETED"].includes(b.status),
+          )
+          .map((b) => ({
+            ...b,
+            date: b.sessionDate,
+            startTime: b.startTime,
+            type: "REGULAR" as const,
+          }));
+
+        const allAvailable = (
+          [...kidFreeTrials, ...kidRegulars] as UnifiedBooking[]
         )
           .filter((b) => b.date && b.startTime)
           .sort((a, b) => {
-            const A = new Date(`${a.date}T${a.startTime}`).getTime();
-            const B = new Date(`${b.date}T${b.startTime}`).getTime();
+            const A = parseSafeDateTime(a.date, a.startTime).getTime();
+            const B = parseSafeDateTime(b.date, b.startTime).getTime();
             return A - B;
-          })
-          .filter((b) => new Date(`${b.date}T${b.startTime}`) > new Date());
+          });
 
-        setNextClass(allUpcoming[0] || null);
+        const now = Date.now();
+        // Priority 1: Current session (started within last 30 mins)
+        const current = allAvailable.find((b) => {
+          const startMs = parseSafeDateTime(b.date, b.startTime).getTime();
+          return startMs <= now && startMs > now - 30 * 60 * 1000;
+        });
+
+        // Priority 2: Next upcoming session
+        const next = allAvailable.find((b) => {
+          const startMs = parseSafeDateTime(b.date, b.startTime).getTime();
+          return startMs > now;
+        });
+
+        setNextClass(current || next || null);
       } catch (error) {
         console.error("Failed to fetch next class for kid dashboard", error);
       } finally {
@@ -133,8 +158,91 @@ const KidDashboard: React.FC = () => {
       }
     };
 
-    if (selectedKid) fetchNextClass();
+    if (selectedKid) {
+      fetchNextClass();
+      const interval = setInterval(fetchNextClass, 30000); // Poll every 30s
+      return () => clearInterval(interval);
+    }
   }, [selectedKid, user]);
+
+  const [isWaiting, setIsWaiting] = useState(false);
+
+  // Sync waiting state with nextClass data
+  useEffect(() => {
+    if (nextClass && nextClass.isKidWaiting && !nextClass.isKidAccepted) {
+      setIsWaiting(true);
+    } else {
+      setIsWaiting(false);
+    }
+  }, [nextClass]);
+
+  // Polling for acceptance
+  useEffect(() => {
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+    if (isWaiting && nextClass) {
+      pollInterval = setInterval(async () => {
+        try {
+          const status =
+            nextClass.type === "REGULAR"
+              ? await bookingService.getClassroomStatus(nextClass.id.toString())
+              : await freeTrialService.getClassroomStatus(
+                  nextClass.id.toString(),
+                );
+
+          if (status.isKidAccepted) {
+            clearInterval(pollInterval!);
+            navigate(`/classroom/${nextClass.id}`);
+          }
+        } catch (error) {
+          console.error("Polling acceptance failed", error);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [isWaiting, nextClass, navigate]);
+
+  const handleEnterClassroom = async () => {
+    if (!nextClass) return;
+
+    try {
+      if (nextClass.type === "REGULAR") {
+        await bookingService.updateWaitingStatus(nextClass.id.toString(), true);
+      } else {
+        await freeTrialService.updateWaitingStatus(
+          nextClass.id.toString(),
+          true,
+        );
+      }
+      setIsWaiting(true);
+    } catch (error) {
+      console.error("Failed to signal waiting status", error);
+      alert("Erreur lors de l'entrée en classe. Veuillez réessayer.");
+    }
+  };
+
+  const handleCancelWaiting = async () => {
+    if (!nextClass) return;
+    try {
+      if (nextClass.type === "REGULAR") {
+        await bookingService.updateWaitingStatus(
+          nextClass.id.toString(),
+          false,
+        );
+      } else {
+        await freeTrialService.updateWaitingStatus(
+          nextClass.id.toString(),
+          false,
+        );
+      }
+      setIsWaiting(false);
+    } catch (error) {
+      console.error("Failed to cancel waiting", error);
+    }
+  };
 
   const nextClassDate = useMemo(() => {
     return nextClass
@@ -143,27 +251,24 @@ const KidDashboard: React.FC = () => {
   }, [nextClass]);
 
   // ── Live entry-gate & countdown ──────────────────────────────────────
-  // canEnter  = class exists AND we are within 5 min before (or after) start
-  // countdown = human-readable time remaining until the 5-min window opens
-  const ENTRY_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+  const ENTRY_WINDOW_MS = 5 * 60 * 1000;
 
   const computeGate = useCallback(() => {
     if (!nextClass?.date || !nextClass?.startTime) {
       return { canEnter: false, countdown: null };
     }
-    const startMs = new Date(
-      `${nextClass.date}T${nextClass.startTime}`,
+    const startMs = parseSafeDateTime(
+      nextClass.date,
+      nextClass.startTime,
     ).getTime();
     const windowOpens = startMs - ENTRY_WINDOW_MS;
     const now = Date.now();
     const diffToWindow = windowOpens - now;
 
     if (diffToWindow <= 0) {
-      // Window is open — class has started or is within 5 min
       return { canEnter: true, countdown: null };
     }
 
-    // Format remaining time as HH:MM:SS
     const totalSec = Math.ceil(diffToWindow / 1000);
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
@@ -179,29 +284,20 @@ const KidDashboard: React.FC = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Recompute immediately when nextClass changes
     setGate(computeGate());
-
-    // Then tick every second
     intervalRef.current = setInterval(() => {
       setGate(computeGate());
     }, 1000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [computeGate]);
 
   const { canEnter, countdown } = gate;
-  // ─────────────────────────────────────────────────────────────────────
 
   if (!isKidMode || !selectedKid) {
     return <KidProfileSelector kids={user?.kids || []} />;
   }
-
-  const handleEnterClassroom = () => {
-    navigate(`/classroom/${nextClass?.id}`);
-  };
 
   return (
     <div
@@ -289,6 +385,11 @@ const KidDashboard: React.FC = () => {
                     </div>
                     <div className="text-lg md:text-2xl font-black text-navy">
                       {nextClassDate}
+                      {nextClass?.lesson && (
+                        <span className="block text-sm md:text-base text-blue/70">
+                          Leçon: {nextClass.lesson.title}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -326,6 +427,39 @@ const KidDashboard: React.FC = () => {
 
         {/* Exit Modal - Moved to App.tsx root */}
       </div>
+
+      {/* Waiting Room Overlay */}
+      {isWaiting && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-blue/40 backdrop-blur-md animate-in fade-in duration-500" />
+          <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-xl p-10 flex flex-col items-center text-center animate-in zoom-in-95 duration-300 border-8 border-white">
+            <div className="w-24 h-24 bg-yellow rounded-full flex items-center justify-center mb-8 shadow-xl animate-bounce">
+              <Video className="w-12 h-12 text-navy" />
+            </div>
+            <h2 className="text-4xl font-black text-navy mb-4 uppercase tracking-tighter">
+              SALLE D'ATTENTE
+            </h2>
+            <p className="text-navy/60 text-xl font-medium max-w-md mb-10 leading-relaxed">
+              Le professeur prépare la classe... <br />
+              <span className="text-blue font-black tracking-widest uppercase text-sm">
+                Tu seras admis automatiquement
+              </span>
+            </p>
+            <div className="flex flex-col gap-4 w-full">
+              <div className="flex items-center justify-center gap-2 text-blue font-black animate-pulse">
+                <Sparkles className="w-5 h-5" />
+                PATIENCE, ÇA VA COMMENCER !
+              </div>
+              <button
+                onClick={handleCancelWaiting}
+                className="mt-6 text-navy/40 font-black uppercase text-sm hover:text-red-500 transition-colors"
+              >
+                Annuler et revenir au tableau de bord
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

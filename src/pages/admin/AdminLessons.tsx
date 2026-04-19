@@ -111,6 +111,26 @@ const AdminLessons: React.FC = () => {
       setCreateMsg({ type: "err", text: "Veuillez sélectionner une unité" });
       return;
     }
+
+    if (!editLessonId) {
+      const isDuplicate = units.some((u) =>
+        u.lessons?.some(
+          (l) =>
+            l.title.toLowerCase().trim() ===
+            lessonForm.title.toLowerCase().trim(),
+        ),
+      );
+      if (isDuplicate) {
+        if (
+          !window.confirm(
+            "Une leçon avec ce titre existe déjà. Voulez-vous vraiment la créer à nouveau ?",
+          )
+        ) {
+          return;
+        }
+      }
+    }
+
     setCreating(true);
     setCreateMsg(null);
     try {
@@ -169,7 +189,7 @@ const AdminLessons: React.FC = () => {
     }
   };
 
-  const handleEditLesson = (l: Lesson) => {
+  const handleEditLesson = (l: Lesson, unitId: string) => {
     setEditLessonId(l.id);
     setLessonForm({
       title: l.title,
@@ -177,7 +197,7 @@ const AdminLessons: React.FC = () => {
       content: l.content,
       type: l.type,
       level: selectedLevel,
-      unitId: l.unitId,
+      unitId: unitId,
       order: l.order,
       thumbnailUrl: l.thumbnailUrl || "",
     });

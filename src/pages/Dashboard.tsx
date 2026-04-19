@@ -13,12 +13,14 @@ import {
   Trophy,
   Zap,
   X,
+  XCircle,
   Sparkles,
 } from "lucide-react";
 
 import { Navbar } from "../components/layout/Navbar";
 import { Card, CardHeader, CardSection } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import ReportBookingModal from "../components/ui/ReportBookingModal";
 
 import { useAuth } from "../context/AuthContextDefinition";
 import { useKidMode } from "../hooks/useKidMode";
@@ -190,12 +192,14 @@ const Dashboard: React.FC = () => {
     credits: 0,
     booked: 0,
     finished: 0,
+    missed: 0,
     activeSubId: null as string | null,
   });
   const [loading, setLoading] = useState(true);
 
   const [canceling, setCanceling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Sync selectedKid with user.kids to avoid stale data
   const { exitKidMode } = useKidMode();
@@ -298,18 +302,28 @@ const Dashboard: React.FC = () => {
         // finished = COMPLETED bookings
         let credits = 0;
         let booked = 0;
+        let missed = 0;
         let finished = 0;
+        const now = new Date();
 
         if (selectedKid) {
           // Regular bookings (from subscription)
           finished += regularBookings.filter(
-            (b) => b.status === "COMPLETED",
+            (b) =>
+              b.status === "COMPLETED" ||
+              (b.status === "SCHEDULED" &&
+                new Date(`${b.sessionDate}T${b.endTime}`) < now),
           ).length;
           booked += regularBookings.filter(
-            (b) => b.status === "SCHEDULED",
+            (b) =>
+              b.status === "SCHEDULED" &&
+              new Date(`${b.sessionDate}T${b.startTime}`) >= now,
+          ).length;
+          missed += regularBookings.filter(
+            (b) => b.status === "MISSED" || b.status === "ABSENT",
           ).length;
 
-          const now = new Date();
+          // Free trial completed check already exists - it uses 'now'
 
           const freeTrialCompleted = kidTrials.filter(
             (b) =>
@@ -339,12 +353,13 @@ const Dashboard: React.FC = () => {
             credits,
             booked,
             finished,
+            missed,
             activeSubId: activeSub?.id || null,
           });
         } else {
           // No kid selected — fall back to user-level credits
           credits = user.credits ?? 0;
-          setStats({ credits, booked, finished, activeSubId: null });
+          setStats({ credits, booked, finished, missed, activeSubId: null });
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -377,26 +392,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleReschedule = async () => {
-    if (!nextBooking || !user?.id) return;
-
-    setCanceling(true);
-    try {
-      if (nextBooking.displayType === "FREE_TRIAL") {
-        await freeTrialService.cancelBooking(Number(nextBooking.id), user.id);
-        navigate(`/free-trial-booking?userId=${user.id}`);
-      } else {
-        // For regular bookings, reschedule means cancel then go to book-classes
-        await bookingService.cancelBooking(String(nextBooking.id));
-        navigate("/schedule");
-      }
-      await refreshProfile();
-    } catch (error) {
-      console.error("Failed to reschedule:", error);
-      alert("Erreur lors de la reprogrammation");
-      setCanceling(false);
-    }
-  };
   return (
     <div className="min-h-screen bg-slate-50 text-navy">
       <Navbar />
@@ -500,7 +495,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Credits = purchased but not yet booked */}
           <StatCard
             icon={<Zap className="w-5 h-5" />}
@@ -535,6 +530,14 @@ const Dashboard: React.FC = () => {
             value={loading ? "…" : stats.finished}
             hint="Séances déjà effectuées"
             accent="turquoise"
+          />
+          {/* Missed = MISSED or ABSENT */}
+          <StatCard
+            icon={<XCircle className="w-5 h-5" />}
+            label="Cours manqués"
+            value={loading ? "…" : stats.missed}
+            hint="Séances d'absence"
+            accent="orange"
           />
         </div>
 
@@ -646,9 +649,9 @@ const Dashboard: React.FC = () => {
 
                         <Button
                           variant="outline"
-                          onClick={handleReschedule}
+                          onClick={() => setShowReportModal(true)}
                           disabled={canceling}
-                          className="rounded-xl border-blue/30 text-blue hover:bg-blue/10"
+                          className="rounded-xl border-orange/30 text-orange hover:bg-orange/10"
                         >
                           Reporter
                         </Button>
@@ -657,7 +660,7 @@ const Dashboard: React.FC = () => {
                           variant="outline"
                           onClick={() => setShowCancelConfirm(true)}
                           disabled={canceling}
-                          className="rounded-xl border-orange/30 text-orange hover:bg-orange/10"
+                          className="rounded-xl border-red-300 text-red-500 hover:bg-red-50"
                         >
                           Annuler
                         </Button>
@@ -951,6 +954,18 @@ const Dashboard: React.FC = () => {
             </Card>
           </div>
         </div>
+      )}
+
+      {/* Report Booking Modal */}
+      {nextBooking && (
+        <ReportBookingModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          bookingId={nextBooking.id}
+          bookingType={nextBooking.displayType}
+          userId={user?.id || 0}
+          kidId={selectedKid?.id?.toString()}
+        />
       )}
     </div>
   );

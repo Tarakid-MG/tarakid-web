@@ -65,6 +65,57 @@ export const freeTrialService = {
     );
     return response.data;
   },
+
+  async getClassroomStatus(id: number): Promise<FreeTrialBooking> {
+    const response = await api.get<FreeTrialBooking>(
+      `/free-trial/${id}/classroom-status`,
+    );
+    return response.data;
+  },
+
+  async updateWaitingStatus(
+    id: number,
+    isKidWaiting: boolean,
+  ): Promise<FreeTrialBooking> {
+    const response = await api.patch<FreeTrialBooking>(
+      `/free-trial/${id}/waiting-status`,
+      { isKidWaiting },
+    );
+    return response.data;
+  },
+
+  async updateAcceptanceStatus(
+    id: number,
+    isKidAccepted: boolean,
+  ): Promise<FreeTrialBooking> {
+    const response = await api.patch<FreeTrialBooking>(
+      `/free-trial/${id}/acceptance-status`,
+      { isKidAccepted },
+    );
+    return response.data;
+  },
+
+  async updatePresenceStatus(
+    id: number,
+    isTeacherInClass: boolean,
+  ): Promise<FreeTrialBooking> {
+    const response = await api.patch<FreeTrialBooking>(
+      `/free-trial/${id}/presence`,
+      { isTeacherInClass },
+    );
+    return response.data;
+  },
+
+  async updateInteractionData(
+    id: number,
+    interactionData: string,
+  ): Promise<FreeTrialBooking> {
+    const response = await api.patch<FreeTrialBooking>(
+      `/free-trial/${id}/interaction`,
+      { interactionData },
+    );
+    return response.data;
+  },
 };
 
 export type { FreeTrialSession };
