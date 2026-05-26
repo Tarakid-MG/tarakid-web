@@ -14,6 +14,7 @@ import {
   Layers,
   Users,
   Bell,
+  MessageSquareText,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContextDefinition";
 import {
@@ -21,6 +22,7 @@ import {
   type AppNotification,
 } from "../../services/notification.service";
 import { useEffect } from "react";
+import { feedbackService } from "../../services/feedback.service";
 
 const navItems = [
   {
@@ -58,6 +60,12 @@ const navItems = [
     label: "Niveaux",
     icon: Layers,
   },
+  {
+    to: "/admin/feedback",
+    label: "Feedback",
+    icon: MessageSquareText,
+    badge: "feedback",
+  },
 ];
 
 interface AdminLayoutProps {
@@ -71,24 +79,40 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [feedbackUnreadCount, setFeedbackUnreadCount] = useState(0);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
+    const loadFeedbackCount = () => {
+      feedbackService
+        .getUnreadCount()
+        .then(setFeedbackUnreadCount)
+        .catch(console.error);
+    };
+
     notificationService
       .getMyNotifications()
       .then(setNotifications)
       .catch(console.error);
+    loadFeedbackCount();
+
     const interval = setInterval(() => {
       notificationService
         .getMyNotifications()
         .then(setNotifications)
         .catch(console.error);
+      loadFeedbackCount();
     }, 30000);
-    return () => clearInterval(interval);
+
+    window.addEventListener("feedback-read", loadFeedbackCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("feedback-read", loadFeedbackCount);
+    };
   }, []);
 
-  const handleMarkRead = async (id: number) => {
+  const handleMarkRead = async (id: string) => {
     await notificationService.markAsRead(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
@@ -123,13 +147,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {navItems.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
             to={to}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              `relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                 collapsed ? "justify-center" : ""
               } ${
                 isActive
@@ -141,6 +165,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           >
             <Icon className="w-5 h-5 shrink-0" />
             {!collapsed && <span>{label}</span>}
+            {badge === "feedback" && feedbackUnreadCount > 0 && (
+              <span
+                className={`bg-red-500 text-white text-[10px] font-black rounded-lg min-w-5 h-5 px-1.5 flex items-center justify-center ${
+                  collapsed ? "absolute right-1 top-1" : "ml-auto"
+                }`}
+              >
+                {feedbackUnreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -30,6 +30,7 @@ import {
   bookingService,
   type TeacherAvailability,
 } from "../services/booking.service";
+import { freeTrialService } from "../services/free-trial.service";
 import { useAuth } from "../context/AuthContextDefinition";
 
 // ── Refactored Imports ──────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ import { EditModeBanner } from "../components/TeacherSessions/components/EditMod
 import { CalendarGrid } from "../components/TeacherSessions/components/CalendarGrid";
 import { SuccessToast } from "../components/TeacherSessions/components/SuccessToast";
 import { NextSessionBanner } from "../components/TeacherSessions/components/NextSessionBanner";
+import { mergeClassroomInteractionData } from "../utils/bookingStatus";
 
 // ── Component ────────────────────────────────────────────────────────────────
 export const TeacherSessions: React.FC = () => {
@@ -102,12 +104,24 @@ export const TeacherSessions: React.FC = () => {
     );
   }, [sessions]);
 
+  const upcomingSessionCount = useMemo(() => {
+    const now = new Date();
+    return sessions.filter((session) => {
+      const end = new Date(`${session.sessionDate}T${session.endTime}`);
+      return (
+        end >= now &&
+        session.status !== "CANCELLED" &&
+        session.status !== "REPORTED"
+      );
+    }).length;
+  }, [sessions]);
+
   // ── Fetch ──────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     if (!user?.id) return;
     try {
       const [sessionsData, availabilityData] = await Promise.all([
-        bookingService.getTeacherUpcoming(),
+        bookingService.getTeacherCalendar(),
         bookingService.getTeacherAvailability(),
       ]);
       setSessions(sessionsData as Session[]);
@@ -318,6 +332,21 @@ export const TeacherSessions: React.FC = () => {
         !String(session.id).startsWith("trial_")
           ? `trial_${session.id}`
           : session.id;
+      const interactionData = mergeClassroomInteractionData(
+        session.interactionData,
+        {
+          teacherFirstEnteredAt: new Date().toISOString(),
+        },
+      );
+
+      if (String(bookingId).startsWith("trial_")) {
+        await freeTrialService.updateInteractionData(
+          parseInt(String(bookingId).replace("trial_", ""), 10),
+          interactionData,
+        );
+      } else {
+        await bookingService.updateInteractionData(bookingId, interactionData);
+      }
       await bookingService.updatePresenceStatus(bookingId, true);
       navigate(`/classroom/${bookingId}`);
     } catch (error) {
@@ -328,7 +357,7 @@ export const TeacherSessions: React.FC = () => {
 
   const pendingCount = pendingSlots.size;
   const savedCount = availabilities.length;
-  const sessionCount = sessions.length;
+  const sessionCount = upcomingSessionCount;
 
   // ── Render ────────────────────────────────────────────────────────────
   return (

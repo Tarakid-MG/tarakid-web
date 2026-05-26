@@ -193,6 +193,12 @@ export interface CreateUnitDto {
   order?: number;
 }
 
+export interface RevisionAsset {
+  key: string;
+  name: string;
+  url: string;
+}
+
 // ─── Auth Admin ───────────────────────────────────────────────────────────────
 
 export const adminService = {

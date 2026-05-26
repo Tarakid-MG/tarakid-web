@@ -2,24 +2,28 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  Camera,
   BookOpen,
   Calendar,
   CheckCircle,
   Clock,
   Gamepad2,
   HelpCircle,
+  Mic,
   PlayCircle,
   Star,
   Trophy,
   Zap,
   X,
   XCircle,
+  Timer,
   Sparkles,
 } from "lucide-react";
 
 import { Navbar } from "../components/layout/Navbar";
 import { Card, CardHeader, CardSection } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 import ReportBookingModal from "../components/ui/ReportBookingModal";
 
 import { useAuth } from "../context/AuthContextDefinition";
@@ -30,7 +34,16 @@ import { bookingService } from "../services/booking.service";
 import { subscriptionService } from "../services/subscription.service";
 import { kidService } from "../services/kid.service";
 
-import type { Booking, Subscription, FreeTrialBooking } from "../types/auth";
+import type {
+  Booking,
+  Subscription,
+  FreeTrialBooking,
+  Kid,
+} from "../types/auth";
+import {
+  deriveBookingStatus,
+  toBookingStatusSource,
+} from "../utils/bookingStatus";
 
 const MOCK_ACTIVITIES = [
   {
@@ -178,6 +191,7 @@ type UnifiedBooking = {
   start: string;
   end: string;
   kidId?: string | number;
+  teacherId?: number;
   // Add other properties if needed for display, e.g., course name
   courseName?: string;
 };
@@ -192,7 +206,8 @@ const Dashboard: React.FC = () => {
     credits: 0,
     booked: 0,
     finished: 0,
-    missed: 0,
+    missing: 0,
+    late: 0,
     activeSubId: null as string | null,
   });
   const [loading, setLoading] = useState(true);
@@ -200,6 +215,138 @@ const Dashboard: React.FC = () => {
   const [canceling, setCanceling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showKidModeConfirm, setShowKidModeConfirm] = useState(false);
+  const [pendingKidModeKid, setPendingKidModeKid] = useState<Kid | null>(null);
+  const [showDeviceTest, setShowDeviceTest] = useState(false);
+  const [isTestingDevices, setIsTestingDevices] = useState(false);
+  const [deviceTestError, setDeviceTestError] = useState("");
+  const [deviceStatus, setDeviceStatus] = useState({
+    camera: false,
+    microphone: false,
+    browser: true,
+  });
+  const [micLevel, setMicLevel] = useState(0);
+  const videoPreviewRef = React.useRef<HTMLVideoElement | null>(null);
+  const deviceStreamRef = React.useRef<MediaStream | null>(null);
+
+  const requestKidModeEntry = (kid?: Kid | null) => {
+    setPendingKidModeKid(kid || null);
+    setShowKidModeConfirm(true);
+  };
+
+  const handleConfirmKidModeEntry = () => {
+    if (pendingKidModeKid) {
+      enterKidMode(pendingKidModeKid);
+    }
+    setShowKidModeConfirm(false);
+    setPendingKidModeKid(null);
+    navigate("/kid-dashboard");
+  };
+
+  const handleCancelKidModeEntry = () => {
+    setShowKidModeConfirm(false);
+    setPendingKidModeKid(null);
+  };
+
+  useEffect(() => {
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+    let animationFrameId = 0;
+
+    const stopStream = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (source) source.disconnect();
+      if (analyser) analyser.disconnect();
+      if (audioContext) void audioContext.close();
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = null;
+      }
+      if (deviceStreamRef.current) {
+        deviceStreamRef.current.getTracks().forEach((track) => track.stop());
+        deviceStreamRef.current = null;
+      }
+      setMicLevel(0);
+    };
+
+    if (!showDeviceTest) {
+      stopStream();
+      setDeviceTestError("");
+      return;
+    }
+
+    const runDeviceTest = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setDeviceStatus({
+          camera: false,
+          microphone: false,
+          browser: false,
+        });
+        setDeviceTestError(
+          "Votre navigateur ne permet pas de tester la caméra et le micro ici.",
+        );
+        return;
+      }
+
+      setIsTestingDevices(true);
+      setDeviceTestError("");
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+
+        deviceStreamRef.current = stream;
+        setDeviceStatus({
+          camera: stream.getVideoTracks().length > 0,
+          microphone: stream.getAudioTracks().length > 0,
+          browser: true,
+        });
+
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = stream;
+          void videoPreviewRef.current.play().catch(() => {});
+        }
+
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+
+        const updateMeter = () => {
+          if (!analyser) return;
+          analyser.getByteFrequencyData(data);
+          const average =
+            data.reduce((sum, value) => sum + value, 0) / data.length;
+          setMicLevel(Math.min(100, Math.round((average / 255) * 100)));
+          animationFrameId = requestAnimationFrame(updateMeter);
+        };
+
+        updateMeter();
+      } catch (error) {
+        console.error("Device test failed", error);
+        setDeviceStatus({
+          camera: false,
+          microphone: false,
+          browser: true,
+        });
+        setDeviceTestError(
+          "Impossible d'accéder à la caméra ou au micro. Vérifiez les permissions du navigateur.",
+        );
+      } finally {
+        setIsTestingDevices(false);
+      }
+    };
+
+    void runDeviceTest();
+
+    return () => {
+      stopStream();
+    };
+  }, [showDeviceTest]);
 
   // Sync selectedKid with user.kids to avoid stale data
   const { exitKidMode } = useKidMode();
@@ -218,22 +365,31 @@ const Dashboard: React.FC = () => {
     }
   }, [user?.kids, selectedKid, updateSelectedKid, exitKidMode]);
 
-  // Fetch latest level from backend periodically or on change
+  // Fetch latest kid progress from backend periodically or on change
   useEffect(() => {
     if (!selectedKid) return;
 
-    const fetchLevel = async () => {
+    const fetchKidProgress = async () => {
       try {
-        const { level } = await kidService.getLevel(selectedKid.id);
-        if (level && level !== selectedKid.level) {
-          updateSelectedKid({ ...selectedKid, level });
+        const kid = await kidService.getKid(selectedKid.id);
+        const nextKid = {
+          ...selectedKid,
+          level: "level" in kid && kid.level ? kid.level : selectedKid.level,
+          stars: kid.stars || 0,
+        };
+
+        if (
+          nextKid.level !== selectedKid.level ||
+          nextKid.stars !== selectedKid.stars
+        ) {
+          updateSelectedKid(nextKid);
         }
       } catch (err) {
-        console.error("Failed to fetch latest level", err);
+        console.error("Failed to fetch latest kid progress", err);
       }
     };
 
-    fetchLevel();
+    fetchKidProgress();
   }, [selectedKid?.id, updateSelectedKid, selectedKid]);
 
   // Auto-select first kid if none selected
@@ -302,46 +458,40 @@ const Dashboard: React.FC = () => {
         // finished = COMPLETED bookings
         let credits = 0;
         let booked = 0;
-        let missed = 0;
+        let missing = 0;
+        let late = 0;
         let finished = 0;
         const now = new Date();
 
         if (selectedKid) {
-          // Regular bookings (from subscription)
-          finished += regularBookings.filter(
-            (b) =>
-              b.status === "COMPLETED" ||
-              (b.status === "SCHEDULED" &&
-                new Date(`${b.sessionDate}T${b.endTime}`) < now),
-          ).length;
-          booked += regularBookings.filter(
-            (b) =>
-              b.status === "SCHEDULED" &&
-              new Date(`${b.sessionDate}T${b.startTime}`) >= now,
-          ).length;
-          missed += regularBookings.filter(
-            (b) => b.status === "MISSED" || b.status === "ABSENT",
-          ).length;
+          const allBookings = [...regularBookings, ...kidTrials];
 
-          // Free trial completed check already exists - it uses 'now'
+          allBookings.forEach((booking) => {
+            const source = toBookingStatusSource(booking);
+            if (!source) return;
 
-          const freeTrialCompleted = kidTrials.filter(
-            (b) =>
-              b.status === "CONFIRMED" &&
-              b.session &&
-              new Date(`${b.session.date}T${b.session.endTime}`) < now,
-          ).length;
+            const startMs = new Date(`${source.date}T${source.start}`).getTime();
+            if (startMs > now.getTime()) {
+              const isUpcomingStatus =
+                booking.status === "SCHEDULED" || booking.status === "CONFIRMED";
+              if (isUpcomingStatus) booked += 1;
+              return;
+            }
 
-          // Upcoming free-trial bookings (not yet past end time)
-          const freeTrialBooked = kidTrials.filter(
-            (b) =>
-              b.status === "CONFIRMED" &&
-              b.session &&
-              new Date(`${b.session.date}T${b.session.endTime}`) >= now,
-          ).length;
-
-          finished += freeTrialCompleted;
-          booked += freeTrialBooked;
+            switch (deriveBookingStatus(source, now.getTime())) {
+              case "COMPLETED":
+                finished += 1;
+                break;
+              case "MISSING":
+                missing += 1;
+                break;
+              case "LATE":
+                late += 1;
+                break;
+              default:
+                break;
+            }
+          });
 
           // Credits = remaining unbooked credits on the active subscription
           const activeSub = kidSubscriptions.find((s) => s.status === "ACTIVE");
@@ -353,13 +503,21 @@ const Dashboard: React.FC = () => {
             credits,
             booked,
             finished,
-            missed,
+            missing,
+            late,
             activeSubId: activeSub?.id || null,
           });
         } else {
           // No kid selected — fall back to user-level credits
           credits = user.credits ?? 0;
-          setStats({ credits, booked, finished, missed, activeSubId: null });
+          setStats({
+            credits,
+            booked,
+            finished,
+            missing,
+            late,
+            activeSubId: null,
+          });
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -419,11 +577,13 @@ const Dashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (selectedKid) navigate("/kid-dashboard");
-                    else if (user?.kids && user.kids.length === 1) {
-                      enterKidMode(user.kids[0]);
-                      navigate("/kid-dashboard");
-                    } else navigate("/kid-dashboard");
+                    if (selectedKid) {
+                      requestKidModeEntry(selectedKid);
+                    } else if (user?.kids && user.kids.length === 1) {
+                      requestKidModeEntry(user.kids[0]);
+                    } else {
+                      requestKidModeEntry(null);
+                    }
                   }}
                   className="
                     w-full text-left
@@ -495,7 +655,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           {/* Credits = purchased but not yet booked */}
           <StatCard
             icon={<Zap className="w-5 h-5" />}
@@ -535,9 +695,16 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={<XCircle className="w-5 h-5" />}
             label="Cours manqués"
-            value={loading ? "…" : stats.missed}
-            hint="Séances d'absence"
+            value={loading ? "…" : stats.missing}
+            hint="Aucune entrée en classe pendant 30 min"
             accent="orange"
+          />
+          <StatCard
+            icon={<Timer className="w-5 h-5" />}
+            label="Cours en retard"
+            value={loading ? "…" : stats.late}
+            hint="Entrée après le début du cours"
+            accent="blue"
           />
         </div>
 
@@ -637,10 +804,9 @@ const Dashboard: React.FC = () => {
                         <Button
                           onClick={() => {
                             if (selectedKid) {
-                              enterKidMode(selectedKid);
-                              navigate("/kid-dashboard");
+                              requestKidModeEntry(selectedKid);
                             } else {
-                              navigate("/kid-dashboard");
+                              requestKidModeEntry(null);
                             }
                           }}
                         >
@@ -904,6 +1070,7 @@ const Dashboard: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="w-full border-teal/30 text-teal hover:bg-teal/10 rounded-xl"
+                  onClick={() => setShowDeviceTest(true)}
                 >
                   Tester mon matériel
                 </Button>
@@ -965,7 +1132,191 @@ const Dashboard: React.FC = () => {
           bookingType={nextBooking.displayType}
           userId={user?.id || 0}
           kidId={selectedKid?.id?.toString()}
+          teacherId={nextBooking.teacherId}
         />
+      )}
+
+      <ConfirmModal
+        isOpen={showKidModeConfirm}
+        title="Passer en mode enfant ?"
+        message={
+          pendingKidModeKid
+            ? `Le profil de ${pendingKidModeKid.name} va s'ouvrir avec une interface adaptée aux enfants.`
+            : "L'interface enfant va s'ouvrir pour choisir le profil à utiliser."
+        }
+        confirmLabel="Continuer"
+        cancelLabel="Rester ici"
+        variant="info"
+        onConfirm={handleConfirmKidModeEntry}
+        onCancel={handleCancelKidModeEntry}
+      />
+
+      {showDeviceTest && (
+        <div className="fixed inset-0 z-50 bg-navy/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl">
+            <Card variant="default" className="p-5 md:p-6 relative">
+              <button
+                type="button"
+                onClick={() => setShowDeviceTest(false)}
+                className="absolute right-4 top-4 p-2 rounded-lg hover:bg-slate-50"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4 text-navy/50" />
+              </button>
+
+              <div className="flex items-start gap-3">
+                <div className="h-12 w-12 rounded-2xl bg-teal/10 border border-teal/20 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-6 h-6 text-teal" />
+                </div>
+                <div>
+                  <div className="font-semibold text-lg text-navy">
+                    Test de matériel
+                  </div>
+                  <div className="text-sm text-navy/60 mt-1">
+                    Vérifiez votre caméra, votre micro et les permissions du navigateur avant le cours.
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="text-sm font-semibold text-navy mb-3">
+                    Aperçu caméra
+                  </div>
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-navy/90 flex items-center justify-center">
+                    {deviceStatus.camera ? (
+                      <video
+                        ref={videoPreviewRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center px-6">
+                        <Camera className="w-8 h-8 text-white/60 mx-auto mb-2" />
+                        <div className="text-sm font-medium text-white/70">
+                          {isTestingDevices
+                            ? "Initialisation de la caméra..."
+                            : "Caméra indisponible"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-10 w-10 rounded-2xl border flex items-center justify-center ${
+                          deviceStatus.browser
+                            ? "bg-blue/10 border-blue/20"
+                            : "bg-orange/10 border-orange/20"
+                        }`}
+                      >
+                        <CheckCircle
+                          className={`w-5 h-5 ${
+                            deviceStatus.browser ? "text-blue" : "text-orange"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-navy">Navigateur</div>
+                        <div className="text-sm text-navy/60">
+                          {deviceStatus.browser
+                            ? "Compatible avec le test"
+                            : "Navigateur non compatible"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-10 w-10 rounded-2xl border flex items-center justify-center ${
+                          deviceStatus.camera
+                            ? "bg-teal/10 border-teal/20"
+                            : "bg-orange/10 border-orange/20"
+                        }`}
+                      >
+                        <Camera
+                          className={`w-5 h-5 ${
+                            deviceStatus.camera ? "text-teal" : "text-orange"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-navy">Caméra</div>
+                        <div className="text-sm text-navy/60">
+                          {deviceStatus.camera ? "Détectée" : "Non détectée"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-10 w-10 rounded-2xl border flex items-center justify-center ${
+                          deviceStatus.microphone
+                            ? "bg-teal/10 border-teal/20"
+                            : "bg-orange/10 border-orange/20"
+                        }`}
+                      >
+                        <Mic
+                          className={`w-5 h-5 ${
+                            deviceStatus.microphone
+                              ? "text-teal"
+                              : "text-orange"
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-navy">Microphone</div>
+                        <div className="text-sm text-navy/60 mb-2">
+                          {deviceStatus.microphone ? "Détecté" : "Non détecté"}
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-teal transition-all"
+                            style={{ width: `${micLevel}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {deviceTestError && (
+                <div className="mt-5 rounded-2xl border border-orange/20 bg-orange/10 px-4 py-3 text-sm font-medium text-orange">
+                  {deviceTestError}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeviceTest(false)}
+                  className="border-blue/25 text-blue hover:bg-blue/10 rounded-xl"
+                >
+                  Fermer
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowDeviceTest(false);
+                    setTimeout(() => setShowDeviceTest(true), 0);
+                  }}
+                  loading={isTestingDevices}
+                >
+                  Relancer le test
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );

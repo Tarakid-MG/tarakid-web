@@ -7,6 +7,8 @@ export interface Session {
   kid: { id: string; name: string; age: number; level: string };
   type?: "REGULAR" | "FREE_TRIAL";
   isTeacherInClass?: boolean;
+  isKidWaiting?: boolean;
+  interactionData?: string;
   lesson?: { id: string; title: string; order: number } | null;
   suggestedLesson?: { id: string; title: string; order: number } | null;
 }

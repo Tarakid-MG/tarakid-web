@@ -5,6 +5,7 @@ import { CheckSquare, Square, Lock, Check, Video } from "lucide-react";
 import type { Session, SlotKey } from "../types";
 import { HOURS, MINUTES, isBlackout, toSlotKey, isJoinable } from "../utils";
 import type { TeacherAvailability } from "../../../services/booking.service";
+import { deriveBookingStatus } from "../../../utils/bookingStatus";
 
 interface CalendarGridProps {
   weekDays: Date[];
@@ -35,6 +36,93 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   setSelectedSession,
   onEnterClassroom,
 }) => {
+  const getSessionMoment = (session: Session) => {
+    const start = new Date(`${session.sessionDate}T${session.startTime}`);
+    const end = new Date(`${session.sessionDate}T${session.endTime}`);
+    const now = new Date();
+    return {
+      isPast: end < now,
+      isCurrent: start <= now && end >= now,
+    };
+  };
+
+  const getStatusColors = (session: Session) => {
+    const { isPast, isCurrent } = getSessionMoment(session);
+    const isTrial = session.type === "FREE_TRIAL";
+    const derivedStatus = deriveBookingStatus({
+      status: session.status,
+      date: session.sessionDate,
+      start: session.startTime,
+      end: session.endTime,
+      interactionData: session.interactionData,
+      isKidWaiting: session.isKidWaiting,
+      isTeacherInClass: session.isTeacherInClass,
+    });
+
+    if (isPast) {
+      switch (derivedStatus) {
+        case "COMPLETED":
+        case "LATE":
+          return {
+            bg: "rgba(16,185,129,0.12)",
+            border: "2px solid #10b981",
+            borderLeft: "#10b981",
+            text: "#065f46",
+            badge: derivedStatus === "LATE" ? "Terminé" : "Terminé",
+          };
+        case "MISSING":
+        case "TEACHER_ABSENT":
+          return {
+            bg: "rgba(239,68,68,0.08)",
+            border: "2px solid #ef4444",
+            borderLeft: "#ef4444",
+            text: "#991b1b",
+            badge:
+              derivedStatus === "TEACHER_ABSENT" ? "Prof absent" : "Manqué",
+          };
+        case "REPORTED":
+        case "CANCELLED":
+          return {
+            bg: "rgba(100,116,139,0.1)",
+            border: "2px solid #64748b",
+            borderLeft: "#64748b",
+            text: "#334155",
+            badge: derivedStatus === "REPORTED" ? "Reporté" : "Annulé",
+          };
+        default:
+          return {
+            bg: "rgba(100,116,139,0.1)",
+            border: "2px solid #64748b",
+            borderLeft: "#64748b",
+            text: "#334155",
+            badge: "Passé",
+          };
+      }
+    }
+
+    if (isCurrent) {
+      return {
+        bg: isTrial ? "rgba(255,183,3,0.12)" : "rgba(33,158,188,0.12)",
+        border: isTrial
+          ? "2px solid #FB8500"
+          : "2px solid #219EBC",
+        borderLeft: isTrial ? "#FB8500" : "#219EBC",
+        text: isTrial ? "#995C00" : "#023047",
+        badge: "En cours",
+      };
+    }
+
+    return {
+      bg: isTrial ? "rgba(255,183,3,0.12)" : "rgba(33,158,188,0.12)",
+      border: isTrial
+        ? "2px solid #FB8500"
+        : "2px solid #219EBC",
+      borderLeft: isTrial ? "#FB8500" : "#219EBC",
+      text: isTrial ? "#995C00" : "#023047",
+      badge: isTrial ? "Essai" : "À venir",
+    };
+  };
+
   const getSlotContent = (day: Date, hour: number, minute: string) => {
     const timeStr = `${hour.toString().padStart(2, "0")}:${minute}:00`;
     const session = sessions.find(
@@ -79,7 +167,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   className={`p-3 text-center border-r border-slate-100 last:border-r-0 transition-colors ${
                     editMode ? "cursor-pointer hover:bg-amber-50/40" : ""
                   }`}
-                  style={isToday ? { background: "rgba(33,158,188,0.03)" } : {}}
+                  style={
+                    isToday
+                      ? {
+                          background:
+                            "linear-gradient(180deg, rgba(33,158,188,0.16) 0%, rgba(33,158,188,0.08) 100%)",
+                          boxShadow: "inset 0 0 0 2px rgba(33,158,188,0.24)",
+                        }
+                      : {}
+                  }
                   onClick={() => editMode && toggleDay(day)}
                   title={
                     editMode
@@ -97,11 +193,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </p>
                   <div className="flex items-center justify-center gap-1.5 mb-1">
                     <p
-                      className="text-xl font-black leading-none"
+                      className="text-xl font-black leading-none min-w-9 h-9 rounded-xl flex items-center justify-center"
                       style={{
-                        color: isToday
+                        color: isToday ? "white" : "var(--color-navy)",
+                        background: isToday
                           ? "var(--color-blue)"
-                          : "var(--color-navy)",
+                          : "transparent",
+                        boxShadow: isToday
+                          ? "0 8px 18px rgba(33,158,188,0.22)"
+                          : "none",
                       }}
                     >
                       {format(day, "dd")}
@@ -144,7 +244,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   )}
                   {isToday && (
                     <div
-                      className="w-4 h-0.5 rounded-full mx-auto mt-1"
+                      className="w-10 h-1 rounded-full mx-auto mt-1"
                       style={{ background: "var(--color-blue)" }}
                     />
                   )}
@@ -178,7 +278,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     style={{
                       minHeight: "76px",
                       background: isToday
-                        ? "rgba(33,158,188,0.015)"
+                        ? "rgba(33,158,188,0.05)"
                         : undefined,
                     }}
                   >
@@ -213,68 +313,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                       if (isBooked) {
                         const session = content!.data as Session;
-
-                        const getStatusColors = (s: Session) => {
-                          const status = s.status;
-                          const isTrial = s.type === "FREE_TRIAL";
-
-                          // Check if missed: past date/time AND not attended
-                          const sessionStart = new Date(
-                            `${s.sessionDate}T${s.startTime}`,
-                          );
-                          const isPast = sessionStart < new Date();
-                          const isMissed =
-                            isPast &&
-                            !s.isTeacherInClass &&
-                            status !== "COMPLETED" &&
-                            status !== "CANCELLED";
-
-                          if (isMissed || status === "MISSED") {
-                            return {
-                              bg: "rgba(239,68,68,0.08)",
-                              border: "rgba(239,68,68,0.3)",
-                              borderLeft: "#ef4444",
-                              text: "#991b1b",
-                            };
-                          }
-
-                          switch (status) {
-                            case "COMPLETED":
-                            case "DONE_BUT_MISSING":
-                              return {
-                                bg: "rgba(16, 185, 129, 0.12)",
-                                border: "rgba(16, 185, 129, 0.4)",
-                                borderLeft: "#10b981",
-                                text: "#064e3b",
-                              };
-                            case "CANCELLED":
-                              return {
-                                bg: "rgba(100,116,139,0.1)",
-                                border: "rgba(100,116,139,0.3)",
-                                borderLeft: "#64748b",
-                                text: "#334155",
-                              };
-                            case "ABSENT":
-                              return {
-                                bg: "rgba(148,163,184,0.12)",
-                                border: "rgba(148,163,184,0.4)",
-                                borderLeft: "#94a3b8",
-                                text: "#1e293b",
-                              };
-                            default: // SCHEDULED, CONFIRMED
-                              return {
-                                bg: isTrial
-                                  ? "rgba(255,183,3,0.12)"
-                                  : "rgba(33,158,188,0.12)",
-                                border: isTrial
-                                  ? "1.5px solid rgba(255,183,3,0.4)"
-                                  : "1.5px solid rgba(33,158,188,0.4)",
-                                borderLeft: isTrial ? "#FB8500" : "#219EBC",
-                                text: isTrial ? "#995C00" : "#023047",
-                              };
-                          }
-                        };
-
                         const colors = getStatusColors(session);
 
                         return (
@@ -344,6 +382,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                   }}
                                 >
                                   {session.kid.age} ans
+                                </span>
+                                <span
+                                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wide"
+                                  style={{
+                                    background: "rgba(255,255,255,0.65)",
+                                    color: colors.borderLeft,
+                                  }}
+                                >
+                                  {colors.badge}
                                 </span>
                               </div>
                             </div>

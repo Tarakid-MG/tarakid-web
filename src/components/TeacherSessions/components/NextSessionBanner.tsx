@@ -63,7 +63,7 @@ export const NextSessionBanner: React.FC<NextSessionBannerProps> = ({
   if (!session) return null;
 
   return (
-    <div className="bg-white rounded-[2rem] border-4 border-blue/10 p-6 shadow-xl relative overflow-hidden group">
+    <div className="bg-white rounded-4xl border-4 border-blue/10 p-6 shadow-xl relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue/5 rounded-full -mr-10 -mt-10 blur-2xl" />
       <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal/5 rounded-full -ml-10 -mb-10 blur-2xl" />
 

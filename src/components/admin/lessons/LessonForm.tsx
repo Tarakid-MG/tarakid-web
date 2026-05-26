@@ -236,20 +236,29 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             ? "URL du document PDF"
             : "Contenu (URL ou Code Embed)"}
         </label>
-        <input
-          className={inputCls}
-          required
-          placeholder={
-            lessonForm.type === "pdf"
-              ? "https://example.com/file.pdf"
-              : "https://view.genial.ly/..."
-          }
-          value={lessonForm.content}
-          onChange={(e) =>
-            setLessonForm({ ...lessonForm, content: e.target.value })
-          }
-          style={{ borderColor: "#e2e8f0", color: navy }}
-        />
+        {lessonForm.type === "pdf" ? (
+          <input
+            className={inputCls}
+            required
+            placeholder="https://example.com/file.pdf"
+            value={lessonForm.content}
+            onChange={(e) =>
+              setLessonForm({ ...lessonForm, content: e.target.value })
+            }
+            style={{ borderColor: "#e2e8f0", color: navy }}
+          />
+        ) : (
+          <textarea
+            className={`${inputCls} min-h-[190px] resize-y`}
+            required
+            placeholder="<div>Votre contenu interactif ici...</div>"
+            value={lessonForm.content}
+            onChange={(e) =>
+              setLessonForm({ ...lessonForm, content: e.target.value })
+            }
+            style={{ borderColor: "#e2e8f0", color: navy }}
+          />
+        )}
       </div>
 
       {/* Description */}

@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { MessageSquareText } from "lucide-react";
+import { Link } from "react-router-dom";
+import { feedbackService } from "../../../services/feedback.service";
 import { type Unit, type KidLevel, navy, blue } from "./LessonTypes";
 
 interface AdminSidebarProps {
@@ -13,6 +17,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   selectedLevel,
   lvlColor,
 }) => {
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+
+  useEffect(() => {
+    feedbackService
+      .getUnreadCount()
+      .then(setUnreadFeedback)
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="lg:col-span-4 space-y-5">
       {/* Stats card */}
@@ -74,6 +87,30 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           ))}
         </div>
       </div>
+
+      <Link
+        to="/admin/feedback"
+        className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 flex items-center justify-between hover:border-blue/30 hover:shadow-md transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-blue/10 text-blue flex items-center justify-center">
+            <MessageSquareText className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-black" style={{ color: navy }}>
+              Feedback
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Avis parents
+            </p>
+          </div>
+        </div>
+        {unreadFeedback > 0 && (
+          <span className="min-w-7 h-7 px-2 bg-red-500 text-white rounded-xl text-xs font-black flex items-center justify-center">
+            {unreadFeedback}
+          </span>
+        )}
+      </Link>
 
       {/* Help card */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">

@@ -33,6 +33,7 @@ type ScheduleItem = {
   start: string; // HH:mm:ss or HH:mm
   end: string;
   kidId?: string;
+  teacherId?: number;
 };
 
 function formatDateFR(dateString: string) {
@@ -132,6 +133,7 @@ const SchedulePage: React.FC = () => {
               start: b.startTime,
               end: b.endTime,
               kidId: selectedKidId || undefined,
+              teacherId: b.teacherId,
             }),
           ),
       ];
@@ -546,6 +548,7 @@ const SchedulePage: React.FC = () => {
           bookingType={reportPending.type}
           userId={user?.id || 0}
           kidId={selectedKidId?.toString()}
+          teacherId={reportPending.teacherId}
         />
       )}
     </div>

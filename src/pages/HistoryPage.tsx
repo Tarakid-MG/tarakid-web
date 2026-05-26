@@ -17,6 +17,11 @@ import {
 import { Card } from "../components/ui/Card";
 import type { Booking, Kid, FreeTrialBooking } from "../types/auth";
 import { useKidMode } from "../hooks/useKidMode";
+import {
+  deriveBookingStatus,
+  type DerivedBookingStatus,
+  isPastBooking,
+} from "../utils/bookingStatus";
 
 type UnifiedBooking = {
   id: string | number;
@@ -26,6 +31,10 @@ type UnifiedBooking = {
   end: string;
   status: Booking["status"] | FreeTrialBooking["status"];
   title: string;
+  interactionData?: string;
+  isKidWaiting?: boolean;
+  isTeacherInClass?: boolean;
+  derivedStatus: DerivedBookingStatus;
 };
 
 function formatDateFR(dateString: string) {
@@ -81,6 +90,10 @@ const HistoryPage: React.FC = () => {
               end: b.session?.endTime || "",
               status: b.status,
               title: "Essai Gratuit",
+              interactionData: b.interactionData,
+              isKidWaiting: b.isKidWaiting,
+              isTeacherInClass: b.isTeacherInClass,
+              derivedStatus: "COMPLETED",
             }),
           ),
         ...(regularData as Booking[]).map(
@@ -92,13 +105,31 @@ const HistoryPage: React.FC = () => {
             end: b.endTime,
             status: b.status,
             title: "Anglais Standard",
+            interactionData: b.interactionData,
+            isKidWaiting: b.isKidWaiting,
+            isTeacherInClass: b.isTeacherInClass,
+            derivedStatus: "COMPLETED",
           }),
         ),
       ];
 
-      // Sort by date descending
       const sorted = unified
-        .filter((b) => b.date && b.start)
+        .filter((b) => b.date && b.start && b.end)
+        .map((b) => ({
+          ...b,
+          derivedStatus: deriveBookingStatus(b),
+        }))
+        .filter(
+          (b) =>
+            isPastBooking(b) &&
+            [
+              "COMPLETED",
+              "MISSING",
+              "LATE",
+              "REPORTED",
+              "TEACHER_ABSENT",
+            ].includes(b.derivedStatus),
+        )
         .sort((a, b) => {
           const dateA = new Date(`${a.date}T${a.start}`).getTime();
           const dateB = new Date(`${b.date}T${b.start}`).getTime();
@@ -118,7 +149,7 @@ const HistoryPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const getStatusConfig = (status: Booking["status"]) => {
+  const getStatusConfig = (status: UnifiedBooking["derivedStatus"]) => {
     switch (status) {
       case "COMPLETED":
         return {
@@ -128,14 +159,6 @@ const HistoryPage: React.FC = () => {
           border: "border-emerald-100",
           icon: <CheckCircle2 className="w-4 h-4" />,
         };
-      case "CANCELLED":
-        return {
-          label: "Annulé",
-          color: "text-rose-600",
-          bg: "bg-rose-50",
-          border: "border-rose-100",
-          icon: <XCircle className="w-4 h-4" />,
-        };
       case "REPORTED":
         return {
           label: "Reporté",
@@ -144,23 +167,37 @@ const HistoryPage: React.FC = () => {
           border: "border-amber-100",
           icon: <Clock3 className="w-4 h-4" />,
         };
-      case "MISSED":
-      case "ABSENT":
-      case "DONE_BUT_MISSING":
+      case "MISSING":
         return {
-          label: "Absence",
+          label: "Manqué",
           color: "text-slate-500",
           bg: "bg-slate-50",
           border: "border-slate-200",
           icon: <AlertCircle className="w-4 h-4" />,
         };
-      default:
+      case "LATE":
         return {
-          label: "Prévu",
+          label: "En retard",
           color: "text-blue",
           bg: "bg-blue/5",
           border: "border-blue/10",
-          icon: <Calendar className="w-4 h-4" />,
+          icon: <Clock className="w-4 h-4" />,
+        };
+      case "TEACHER_ABSENT":
+        return {
+          label: "Prof absent",
+          color: "text-rose-600",
+          bg: "bg-rose-50",
+          border: "border-rose-100",
+          icon: <XCircle className="w-4 h-4" />,
+        };
+      default:
+        return {
+          label: "Terminé",
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
+          border: "border-emerald-100",
+          icon: <CheckCircle2 className="w-4 h-4" />,
         };
     }
   };
@@ -199,7 +236,7 @@ const HistoryPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-2 text-sm font-bold text-navy/60">
               <Filter className="w-4 h-4" />
-              <span>Derniers 30 jours</span>
+              <span>Cours passés uniquement</span>
             </div>
           </div>
         </div>
@@ -207,9 +244,7 @@ const HistoryPage: React.FC = () => {
         {bookings.length > 0 ? (
           <div className="space-y-4">
             {bookings.map((booking) => {
-              const config = getStatusConfig(
-                booking.status as Booking["status"],
-              );
+              const config = getStatusConfig(booking.derivedStatus);
               return (
                 <Card
                   key={booking.id}
@@ -285,8 +320,8 @@ const HistoryPage: React.FC = () => {
             <div className="space-y-1">
               <h3 className="text-xl font-black text-navy">Aucun historique</h3>
               <p className="text-navy/40 font-medium max-w-sm mx-auto">
-                Les cours terminés ou annulés apparaîtront ici pour suivre la
-                progression de votre enfant.
+                Les cours terminés, manqués, en retard, reportés ou avec
+                professeur absent apparaîtront ici.
               </p>
             </div>
             <button

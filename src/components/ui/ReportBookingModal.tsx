@@ -20,6 +20,7 @@ interface Props {
   userId: number;
   /** kidId is required for REGULAR bookings to find the active subscription */
   kidId?: string;
+  teacherId?: number;
 }
 
 const ReportBookingModal: React.FC<Props> = ({
@@ -29,6 +30,7 @@ const ReportBookingModal: React.FC<Props> = ({
   bookingType,
   userId,
   kidId,
+  teacherId,
 }) => {
   const navigate = useNavigate();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -74,7 +76,14 @@ const ReportBookingModal: React.FC<Props> = ({
         await bookingService.reportBooking(String(bookingId));
         onClose();
         if (subscription?.id) {
-          navigate(`/book-classes?subscriptionId=${subscription.id}`);
+          const query = new URLSearchParams({
+            subscriptionId: subscription.id,
+          });
+          if (teacherId) {
+            query.set("reportMode", "1");
+            query.set("reportTeacherId", String(teacherId));
+          }
+          navigate(`/book-classes?${query.toString()}`);
         } else {
           navigate("/book-classes");
         }
@@ -92,8 +101,8 @@ const ReportBookingModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm z-300 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-md rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">

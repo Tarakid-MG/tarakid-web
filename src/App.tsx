@@ -14,10 +14,19 @@ import Quiz from "./pages/auth/Quiz";
 import FreeTrialBooking from "./pages/FreeTrialBooking";
 import Dashboard from "./pages/Dashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherNotifications from "./pages/TeacherNotifications";
+import TeacherProfile from "./pages/TeacherProfile";
 import { AuthProvider } from "./context/AuthContext";
 import { KidModeProvider } from "./context/KidModeContext";
 import { TeacherSessions } from "./pages/TeacherSessions";
 import KidDashboard from "./pages/KidDashboard";
+import KidAvatarPage from "./pages/KidAvatarPage";
+import KidVocabularyLessonsPage from "./pages/KidVocabularyLessonsPage";
+import KidExerciseLessonsPage from "./pages/KidExerciseLessonsPage";
+import KidGameLessonsPage from "./pages/KidGameLessonsPage";
+import KidVocabularyPage from "./pages/KidVocabularyPage";
+import KidExercisePage from "./pages/KidExercisePage";
+import KidGamePage from "./pages/KidGamePage";
 import QuizGuard from "./components/auth/QuizGuard";
 import SchedulePage from "./pages/SchedulePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
@@ -40,6 +49,7 @@ import AdminTeachers from "./pages/admin/AdminTeachers";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminLevels from "./pages/admin/AdminLevels";
+import AdminFeedback from "./pages/admin/AdminFeedback";
 
 const AppRoutes = () => {
   const { isKidMode, showExitModal } = useKidMode();
@@ -87,6 +97,62 @@ const AppRoutes = () => {
                 </QuizGuard>
               }
             />
+            <Route
+              path="/kid-avatar"
+              element={
+                <QuizGuard>
+                  <KidAvatarPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-vocabulary"
+              element={
+                <QuizGuard>
+                  <KidVocabularyLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-vocabulary/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidVocabularyPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-exercises"
+              element={
+                <QuizGuard>
+                  <KidExerciseLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-exercises/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidExercisePage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-games"
+              element={
+                <QuizGuard>
+                  <KidGameLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-games/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidGamePage />
+                </QuizGuard>
+              }
+            />
             {/* Redirect any other path to kid dashboard in kid mode */}
             <Route
               path="*"
@@ -117,6 +183,62 @@ const AppRoutes = () => {
               element={
                 <QuizGuard>
                   <KidDashboard />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-avatar"
+              element={
+                <QuizGuard>
+                  <KidAvatarPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-vocabulary"
+              element={
+                <QuizGuard>
+                  <KidVocabularyLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-vocabulary/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidVocabularyPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-exercises"
+              element={
+                <QuizGuard>
+                  <KidExerciseLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-exercises/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidExercisePage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-games"
+              element={
+                <QuizGuard>
+                  <KidGameLessonsPage />
+                </QuizGuard>
+              }
+            />
+            <Route
+              path="/kid-games/:lessonId"
+              element={
+                <QuizGuard>
+                  <KidGamePage />
                 </QuizGuard>
               }
             />
@@ -184,6 +306,22 @@ const AppRoutes = () => {
                 </TeacherGuard>
               }
             />
+            <Route
+              path="/teacher/profile"
+              element={
+                <TeacherGuard>
+                  <TeacherProfile />
+                </TeacherGuard>
+              }
+            />
+            <Route
+              path="/teacher/notifications"
+              element={
+                <TeacherGuard>
+                  <TeacherNotifications />
+                </TeacherGuard>
+              }
+            />
 
             <Route
               path="/classroom/:bookingId"
@@ -245,6 +383,14 @@ const AppRoutes = () => {
               element={
                 <AdminGuard>
                   <AdminLevels />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="/admin/feedback"
+              element={
+                <AdminGuard>
+                  <AdminFeedback />
                 </AdminGuard>
               }
             />

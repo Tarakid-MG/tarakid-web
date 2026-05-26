@@ -53,6 +53,8 @@ const BookingCalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const subscriptionId = searchParams.get("subscriptionId");
+  const reportTeacherId = searchParams.get("reportTeacherId");
+  const isReportFlow = searchParams.get("reportMode") === "1";
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [availability, setAvailability] = useState<GlobalAvailability | null>(
@@ -63,7 +65,7 @@ const BookingCalendarPage: React.FC = () => {
     full: string[];
   }>({ available: [], full: [] });
   const [customType, setCustomType] = useState<"individual" | "weekly">(
-    "weekly",
+    isReportFlow ? "individual" : "weekly",
   );
 
   // Custom Individual state
@@ -124,11 +126,13 @@ const BookingCalendarPage: React.FC = () => {
 
       try {
         const sub = await subscriptionService.getSubscription(subscriptionId);
-        const assignedTeacherId = sub.kid?.assignedTeacherId;
+        const teacherIdForSelection = reportTeacherId
+          ? Number(reportTeacherId)
+          : sub.kid?.assignedTeacherId;
 
         const [availabilityData, dates] = await Promise.all([
-          bookingService.getGlobalAvailability(assignedTeacherId),
-          bookingService.getAvailableDates(12, assignedTeacherId),
+          bookingService.getGlobalAvailability(teacherIdForSelection),
+          bookingService.getAvailableDates(12, teacherIdForSelection),
         ]);
 
         setSubscription(sub);
@@ -182,7 +186,13 @@ const BookingCalendarPage: React.FC = () => {
     };
 
     fetchData();
-  }, [subscriptionId, navigate, user]);
+  }, [subscriptionId, navigate, user, reportTeacherId]);
+
+  useEffect(() => {
+    if (isReportFlow) {
+      setCustomType("individual");
+    }
+  }, [isReportFlow]);
 
   const addMinutes = (time: string, minutes: number): string => {
     const [hours, mins] = time.split(":").map(Number);
@@ -396,6 +406,7 @@ const BookingCalendarPage: React.FC = () => {
         subscriptionId: subscription.id,
         kidId: subscription.kidId || user!.kids![0].id.toString(),
         bookings: bookingsToCreate,
+        teacherId: isReportFlow && reportTeacherId ? Number(reportTeacherId) : undefined,
       });
 
       await refreshProfile();
@@ -470,16 +481,16 @@ const BookingCalendarPage: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <button
-                onClick={() => navigate("/subscription")}
+                onClick={() => navigate(isReportFlow ? "/schedule" : "/subscription")}
                 className="mb-4 flex items-center text-navy/60 font-bold hover:text-blue transition-colors group"
               >
                 <div className="p-1 bg-white rounded-lg shadow-sm mr-2 group-hover:scale-110 transition-transform">
                   <ArrowLeft className="w-4 h-4" />
                 </div>
-                Retour aux abonnements
+                {isReportFlow ? "Retour au planning" : "Retour aux abonnements"}
               </button>
               <h1 className="text-4xl font-black text-navy tracking-tight mb-2">
-                Planifiez les cours de{" "}
+                {isReportFlow ? "Replanifiez le cours de " : "Planifiez les cours de "}
                 {subscription?.kid?.name ||
                   user?.kids?.find(
                     (k) => k.id.toString() === subscription?.kidId,
@@ -489,7 +500,9 @@ const BookingCalendarPage: React.FC = () => {
                 📅
               </h1>
               <p className="text-lg text-navy/60 font-medium">
-                Configurez les horaires préférés pour les prochaines semaines.
+                {isReportFlow
+                  ? "Choisissez un nouveau créneau disponible uniquement chez le professeur déjà assigné."
+                  : "Configurez les horaires préférés pour les prochaines semaines."}
               </p>
               {subscription.kid?.assignedTeacher && (
                 <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue/5 border border-blue/10 rounded-xl text-blue text-sm font-bold">
@@ -524,6 +537,19 @@ const BookingCalendarPage: React.FC = () => {
             </Card>
           </div>
 
+          {isReportFlow && (
+            <Card className="bg-orange/5 border border-orange/10 p-5">
+              <div className="flex items-start gap-3 text-sm font-medium text-navy/75">
+                <Info className="w-5 h-5 text-orange shrink-0 mt-0.5" />
+                <p>
+                  Ce report garde le même professeur pour le nouveau cours. Seuls
+                  ses créneaux disponibles sont affichés ici, donc aucune
+                  réassignation admin ne sera nécessaire.
+                </p>
+              </div>
+            </Card>
+          )}
+
           {/* Error Alert */}
           {error && (
             <div className="animate-in slide-in-from-top-2 duration-300">
@@ -553,28 +579,30 @@ const BookingCalendarPage: React.FC = () => {
           )}
 
           {/* Mode Selector */}
-          <div className="flex justify-center">
-            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 inline-flex relative">
-              <button
-                onClick={() => setCustomType("weekly")}
-                className={`px-6 py-3 rounded-xl font-black text-sm transition-all duration-300 relative z-10 ${customType === "weekly" ? "text-white shadow-lg shadow-blue/20" : "text-navy/60 hover:text-navy hover:bg-slate-50"}`}
-              >
-                {customType === "weekly" && (
-                  <div className="absolute inset-0 bg-blue rounded-xl -z-10 animate-in zoom-in-95 duration-200"></div>
-                )}
-                Planning Hebdomadaire
-              </button>
-              <button
-                onClick={() => setCustomType("individual")}
-                className={`px-6 py-3 rounded-xl font-black text-sm transition-all duration-300 relative z-10 ${customType === "individual" ? "text-white shadow-lg shadow-blue/20" : "text-navy/60 hover:text-navy hover:bg-slate-50"}`}
-              >
-                {customType === "individual" && (
-                  <div className="absolute inset-0 bg-navy rounded-xl -z-10 animate-in zoom-in-95 duration-200"></div>
-                )}
-                Sélection Manuelle
-              </button>
+          {!isReportFlow && (
+            <div className="flex justify-center">
+              <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 inline-flex relative">
+                <button
+                  onClick={() => setCustomType("weekly")}
+                  className={`px-6 py-3 rounded-xl font-black text-sm transition-all duration-300 relative z-10 ${customType === "weekly" ? "text-white shadow-lg shadow-blue/20" : "text-navy/60 hover:text-navy hover:bg-slate-50"}`}
+                >
+                  {customType === "weekly" && (
+                    <div className="absolute inset-0 bg-blue rounded-xl -z-10 animate-in zoom-in-95 duration-200"></div>
+                  )}
+                  Planning Hebdomadaire
+                </button>
+                <button
+                  onClick={() => setCustomType("individual")}
+                  className={`px-6 py-3 rounded-xl font-black text-sm transition-all duration-300 relative z-10 ${customType === "individual" ? "text-white shadow-lg shadow-blue/20" : "text-navy/60 hover:text-navy hover:bg-slate-50"}`}
+                >
+                  {customType === "individual" && (
+                    <div className="absolute inset-0 bg-navy rounded-xl -z-10 animate-in zoom-in-95 duration-200"></div>
+                  )}
+                  Sélection Manuelle
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Content Area */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -6,13 +6,24 @@ interface Point {
   y: number;
 }
 
-interface RemoteDrawData {
-  type: string;
+interface BaseEvent {
+  bookingId: string;
+  type: "draw" | "clear";
+}
+
+interface DrawEvent extends BaseEvent {
+  type: "draw";
   start: Point;
   end: Point;
   color: string;
   lineWidth: number;
 }
+
+interface ClearEvent extends BaseEvent {
+  type: "clear";
+}
+
+type WhiteboardEvent = DrawEvent | ClearEvent;
 
 interface WhiteboardProps {
   socket: Socket | null;
@@ -22,6 +33,7 @@ interface WhiteboardProps {
   lineWidth?: number;
   width: number;
   height: number;
+  isDrawingMode: boolean;
 }
 
 export const Whiteboard: React.FC<WhiteboardProps> = ({
@@ -32,11 +44,13 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({
   lineWidth = 3,
   width,
   height,
+  isDrawingMode,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const lastPoint = useRef<Point | null>(null);
 
-  // Draw locally and emit to socket
+  // ✅ DRAW FUNCTION
   const drawLine = useCallback(
     (
       start: Point,
@@ -47,6 +61,7 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({
     ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
+
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
@@ -60,7 +75,8 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({
       ctx.stroke();
       ctx.closePath();
 
-      if (emit && socket) {
+      // ✅ EMIT seulement si drawing actif
+      if (emit && socket && isDrawingMode) {
         socket.emit("draw", {
           bookingId,
           type: "draw",
@@ -71,70 +87,99 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({
         });
       }
     },
-    [socket, bookingId, width, height],
+    [socket, bookingId, width, height, isDrawingMode],
   );
 
+  // ✅ SOCKET LISTENER
   useEffect(() => {
     if (!socket) return;
 
-    const handleRemoteDraw = (data: any) => {
-      console.log("Whiteboard: received draw event", data.type);
+    const handleRemoteDraw = (data: WhiteboardEvent) => {
+      if (data.bookingId !== bookingId) return;
+
       if (data.type === "draw") {
-        const d = data as RemoteDrawData;
-        drawLine(d.start, d.end, d.color, d.lineWidth, false);
-      } else if (data.type === "clear") {
+        drawLine(data.start, data.end, data.color, data.lineWidth, false);
+      }
+
+      if (data.type === "clear") {
         const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext("2d");
-          ctx?.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
       }
     };
 
     socket.on("draw", handleRemoteDraw);
+
     return () => {
       socket.off("draw", handleRemoteDraw);
     };
-  }, [socket, drawLine]);
+  }, [socket, bookingId, drawLine]);
 
-  const lastPoint = useRef<Point | null>(null);
-
+  // ✅ START DRAW
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawingMode) return; // 🔥 FIX
+
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    const x = ("touches" in e ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = ("touches" in e ? e.touches[0].clientY : e.clientY) - rect.top;
+
+    const clientX =
+      "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY =
+      "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     lastPoint.current = { x: x / width, y: y / height };
     setIsDrawing(true);
   };
 
+  // ✅ DRAW MOVE
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing || !lastPoint.current) return;
+    if (!isDrawing || !lastPoint.current || !isDrawingMode) return; // 🔥 FIX
 
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    const x = ("touches" in e ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = ("touches" in e ? e.touches[0].clientY : e.clientY) - rect.top;
+
+    const clientX =
+      "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY =
+      "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     const currentPoint = { x: x / width, y: y / height };
+
     drawLine(lastPoint.current, currentPoint, color, lineWidth);
+
     lastPoint.current = currentPoint;
   };
 
+  // ✅ END DRAW
   const endDrawing = () => {
     setIsDrawing(false);
     lastPoint.current = null;
   };
 
+  // ✅ CLEAR
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    socket?.emit("draw", { bookingId, type: "clear" });
+
+    socket?.emit("draw", {
+      bookingId,
+      type: "clear",
+    });
   };
 
   return (
@@ -146,21 +191,22 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={endDrawing}
-        onMouseOut={endDrawing}
+        onMouseLeave={endDrawing}
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={endDrawing}
-        className="touch-none cursor-crosshair"
+        className={`touch-none ${
+          isDrawingMode ? "cursor-crosshair" : "cursor-default"
+        }`}
       />
-      {isTeacher && (
+
+      {/* ✅ CLEAR BUTTON (teacher only) */}
+      {isTeacher && isDrawingMode && (
         <button
           onClick={clearCanvas}
           className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-lg hover:bg-white transition-colors z-110"
-          title="Effacer le tableau"
         >
-          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-slate-600">
-            <path d="M15 16h4v2h-4v-2zm0-4h7v2h-7v-2zm0-4h9v2h-9V8zM5 6h8c.55 0 1 .45 1 1v10c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1V7c0-.55.45-1 1-1z" />
-          </svg>
+          🧹
         </button>
       )}
     </div>

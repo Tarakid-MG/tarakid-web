@@ -13,6 +13,7 @@ interface CreateBookingRequest {
   subscriptionId: string;
   kidId: string;
   bookings: BookingSlot[];
+  teacherId?: number;
 }
 
 interface SuggestedSchedule {
@@ -35,6 +36,8 @@ export interface TeacherAvailability {
 
 export interface TeacherStats {
   commitmentScore: number;
+  hearts: number;
+  maxHearts: number;
   currentCompetence: "poor" | "belowAverage" | "average" | "good" | "competent";
   competences: {
     poor: number;
@@ -116,6 +119,11 @@ export const bookingService = {
 
   async getTeacherUpcoming(): Promise<Booking[]> {
     const response = await api.get<Booking[]>("/bookings/teacher/upcoming");
+    return response.data;
+  },
+
+  async getTeacherCalendar(): Promise<Booking[]> {
+    const response = await api.get<Booking[]>("/bookings/teacher/calendar");
     return response.data;
   },
 

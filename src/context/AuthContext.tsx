@@ -56,6 +56,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!activeToken) return;
 
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3002";
+      if (
+        window.location.protocol === "https:" &&
+        apiUrl.startsWith("http://")
+      ) {
+        return;
+      }
+
       fetch(`${apiUrl}/users/status`, {
         method: "PATCH",
         headers: {

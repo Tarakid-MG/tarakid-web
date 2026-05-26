@@ -25,6 +25,12 @@ export interface KidLessonsResponse {
   suggestedLessonId: string | null;
 }
 
+export interface RevisionAsset {
+  key: string;
+  name: string;
+  url: string;
+}
+
 class LessonService {
   async getUnits(level: string): Promise<Unit[]> {
     try {
@@ -58,6 +64,16 @@ class LessonService {
     } catch (error) {
       console.error("Failed to fetch lesson", error);
       return null;
+    }
+  }
+
+  async getRevisionAssets(bucketName: string): Promise<RevisionAsset[]> {
+    try {
+      const response = await api.get(`/lessons/revision-assets/${bucketName}`);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch revision assets", error);
+      return [];
     }
   }
 }

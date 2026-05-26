@@ -1,5 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { History, AlertCircle, RefreshCw, Search } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  History,
+  AlertCircle,
+  RefreshCw,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   adminService,
   type HistoryBooking,
@@ -23,6 +30,8 @@ const AdminBookingHistory: React.FC = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = async () => {
     setLoading(true);
@@ -50,6 +59,10 @@ const AdminBookingHistory: React.FC = () => {
     "REPORTED",
   ];
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, pageSize]);
+
   const filtered = history.filter((b) => {
     const matchStatus = statusFilter === "ALL" || b.status === statusFilter;
     const date = b.sessionDate ?? b.date ?? "";
@@ -60,6 +73,15 @@ const AdminBookingHistory: React.FC = () => {
       (b.kid?.name ?? "").toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+  const startEntry = filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endEntry = Math.min(currentPage * pageSize, filtered.length);
 
   return (
     <AdminLayout>
@@ -89,7 +111,8 @@ const AdminBookingHistory: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/30" />
             <input
@@ -115,6 +138,21 @@ const AdminBookingHistory: React.FC = () => {
               </button>
             ))}
           </div>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-bold text-navy/40">
+            Afficher
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="border border-slate-200 bg-white rounded-xl px-3 py-2 text-sm font-bold text-navy focus:outline-none focus:border-blue/50"
+            >
+              {[10, 20, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {/* Table */}
@@ -145,7 +183,7 @@ const AdminBookingHistory: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((b) => (
+                {paginated.map((b) => (
                   <tr
                     key={b.id}
                     className="border-b border-slate-50 last:border-0 hover:bg-slate-50"
@@ -179,9 +217,65 @@ const AdminBookingHistory: React.FC = () => {
           )}
         </div>
 
-        <p className="text-xs text-navy/30 font-semibold text-right">
-          {filtered.length} entrée(s)
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-xs text-navy/30 font-semibold">
+            {filtered.length === 0
+              ? "0 entrée"
+              : `${startEntry}-${endEntry} sur ${filtered.length} entrée(s)`}
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage <= 1}
+              className="w-10 h-10 rounded-xl border border-slate-200 bg-white text-navy/50 hover:text-blue hover:border-blue/30 disabled:opacity-40 disabled:hover:text-navy/50 disabled:hover:border-slate-200 flex items-center justify-center transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages })
+                .map((_, index) => index + 1)
+                .filter(
+                  (pageNumber) =>
+                    pageNumber === 1 ||
+                    pageNumber === totalPages ||
+                    Math.abs(pageNumber - currentPage) <= 1,
+                )
+                .map((pageNumber, index, pages) => {
+                  const previous = pages[index - 1];
+                  const showGap = previous && pageNumber - previous > 1;
+                  return (
+                    <React.Fragment key={pageNumber}>
+                      {showGap && (
+                        <span className="px-2 text-xs font-black text-navy/25">
+                          ...
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setPage(pageNumber)}
+                        className={`min-w-10 h-10 px-3 rounded-xl text-sm font-black transition-all ${
+                          currentPage === pageNumber
+                            ? "bg-blue text-white shadow-sm"
+                            : "bg-white border border-slate-200 text-navy/45 hover:text-blue hover:border-blue/30"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+            </div>
+
+            <button
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage >= totalPages}
+              className="w-10 h-10 rounded-xl border border-slate-200 bg-white text-navy/50 hover:text-blue hover:border-blue/30 disabled:opacity-40 disabled:hover:text-navy/50 disabled:hover:border-slate-200 flex items-center justify-center transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

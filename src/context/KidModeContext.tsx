@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { Kid } from "../types/auth";
 import { KidModeContext } from "./KidModeContextDefinition";
 
@@ -24,38 +24,50 @@ export const KidModeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const enterKidMode = (kid: Kid) => {
+  const enterKidMode = useCallback((kid: Kid) => {
+    sessionStorage.removeItem("kidModeJustExited");
     setIsKidMode(true);
     setSelectedKid(kid);
     localStorage.setItem("kidModeActive", "true");
     localStorage.setItem("selectedKid", JSON.stringify(kid));
-  };
+  }, []);
 
-  const exitKidMode = () => {
+  const exitKidMode = useCallback(() => {
+    sessionStorage.setItem("kidModeJustExited", "true");
     setIsKidMode(false);
     setSelectedKid(null);
     setShowExitModal(false);
     localStorage.removeItem("kidModeActive");
     localStorage.removeItem("selectedKid");
-  };
+  }, []);
 
-  const updateSelectedKid = (kid: Kid) => {
+  const updateSelectedKid = useCallback((kid: Kid) => {
     setSelectedKid(kid);
     localStorage.setItem("selectedKid", JSON.stringify(kid));
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      isKidMode,
+      selectedKid,
+      showExitModal,
+      enterKidMode,
+      exitKidMode,
+      setShowExitModal,
+      updateSelectedKid,
+    }),
+    [
+      isKidMode,
+      selectedKid,
+      showExitModal,
+      enterKidMode,
+      exitKidMode,
+      updateSelectedKid,
+    ],
+  );
 
   return (
-    <KidModeContext.Provider
-      value={{
-        isKidMode,
-        selectedKid,
-        showExitModal,
-        enterKidMode,
-        exitKidMode,
-        setShowExitModal,
-        updateSelectedKid,
-      }}
-    >
+    <KidModeContext.Provider value={contextValue}>
       {children}
     </KidModeContext.Provider>
   );

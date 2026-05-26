@@ -15,25 +15,25 @@ interface ConfirmModalProps {
 
 const variantConfig = {
   danger: {
-    iconBg: "bg-red-100",
-    iconColor: "text-red-600",
-    border: "border-red-100",
+    iconBg: "bg-orange/15",
+    iconColor: "text-orange",
+    border: "border-orange/20",
     confirmBtn:
-      "bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-200",
+      "bg-orange hover:bg-orange/90 text-white shadow-[0_8px_18px_rgba(247,127,0,0.25)]",
   },
   warning: {
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-    border: "border-orange-100",
+    iconBg: "bg-gold/15",
+    iconColor: "text-gold",
+    border: "border-gold/20",
     confirmBtn:
-      "bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-200",
+      "bg-gold hover:bg-gold/90 text-navy shadow-[0_8px_18px_rgba(239,191,4,0.25)]",
   },
   info: {
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-    border: "border-blue-100",
+    iconBg: "bg-blue/12",
+    iconColor: "text-blue",
+    border: "border-blue/20",
     confirmBtn:
-      "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-200",
+      "bg-blue hover:bg-deepBlue text-white shadow-[0_8px_18px_rgba(33,158,188,0.25)]",
   },
 };
 
@@ -62,42 +62,44 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
       {/* Modal */}
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+        className="relative w-full max-w-md overflow-hidden rounded-4xl border border-white/70 bg-white shadow-[0_22px_64px_rgba(32,42,68,0.22)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(33,158,188,0.14),transparent_55%),radial-gradient(circle_at_top_right,rgba(239,191,4,0.14),transparent_45%)]" />
+
         {/* Close button */}
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-navy/40 hover:text-navy transition-colors"
+          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-xl text-navy/35 transition-colors hover:bg-beige/60 hover:text-navy"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="p-7">
+        <div className="relative p-7">
           {/* Icon */}
           <div
-            className={`w-14 h-14 rounded-2xl ${cfg.iconBg} flex items-center justify-center mb-5 shadow-sm border ${cfg.border}`}
+            className={`mb-5 flex h-14 w-14 items-center justify-center rounded-[1.1rem] border ${cfg.border} ${cfg.iconBg} shadow-sm`}
           >
             <AlertTriangle className={`w-7 h-7 ${cfg.iconColor}`} />
           </div>
 
           {/* Text */}
-          <h3 className="text-navy font-bold text-xl mb-2">{title}</h3>
-          <p className="text-navy/60 text-sm leading-relaxed mb-7">{message}</p>
+          <h3 className="mb-2 text-xl font-black text-navy">{title}</h3>
+          <p className="mb-7 text-sm leading-relaxed text-navy/60">{message}</p>
 
           {/* Actions */}
           <div className="flex gap-3">
             <button
               onClick={onCancel}
               disabled={loading}
-              className="flex-1 py-3 px-4 rounded-2xl border-2 border-slate-200 text-navy/70 font-semibold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
+              className="flex-1 rounded-2xl border-2 border-beige px-4 py-3 text-sm font-bold text-navy/70 transition-all hover:border-blue/15 hover:bg-blue/5 disabled:opacity-50"
             >
               {cancelLabel}
             </button>
             <button
               onClick={onConfirm}
               disabled={loading}
-              className={`flex-1 py-3 px-4 rounded-2xl font-semibold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${cfg.confirmBtn}`}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-all disabled:opacity-60 ${cfg.confirmBtn}`}
             >
               {loading ? (
                 <>

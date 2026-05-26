@@ -18,6 +18,7 @@ export interface Kid {
   hobbies: string[];
   avatarUrl?: string;
   level?: string;
+  stars?: number;
   assignedTeacherId?: number;
   assignedTeacher?: {
     id: number;
@@ -83,6 +84,7 @@ export interface Booking {
   subscriptionId: string;
   kidId: string;
   userId: number;
+  type?: "FREE_TRIAL" | "REGULAR";
   sessionDate: string;
   startTime: string;
   endTime: string;
@@ -128,6 +130,13 @@ export interface User {
   subscriptionPlan?: string;
   phoneNumber?: string;
   address?: string;
+  about?: string;
+  experienceYears?: number;
+  languages?: { name: string; level: string }[];
+  specialties?: string[];
+  teachingStyle?: string;
+  education?: string;
+  certifications?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

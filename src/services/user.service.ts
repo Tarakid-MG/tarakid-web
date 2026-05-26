@@ -1,6 +1,26 @@
 import { type User } from '../types/auth';
+import api from "../api/client";
+
+export interface UpdateTeacherProfileDto {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    address?: string;
+    about?: string;
+    experienceYears?: number;
+    languages?: { name: string; level: string }[];
+    specialties?: string[];
+    teachingStyle?: string;
+    education?: string;
+    certifications?: string[];
+}
 
 export const userService = {
+    async updateProfile(data: UpdateTeacherProfileDto): Promise<User> {
+        const response = await api.patch<User>("/users/profile", data);
+        return response.data;
+    },
+
     /**
      * Checks if a user has completed the kids' quiz.
      * Admins and Teachers bypass this check.

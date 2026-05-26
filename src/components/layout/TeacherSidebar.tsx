@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Sparkles,
   Heart,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContextDefinition";
 import { Logo } from "../ui/Logo";
@@ -27,9 +28,15 @@ const menuItems = [
     icon: Calendar,
     path: "/teacher/sessions",
   },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    path: "/teacher/notifications",
+  },
   { id: "blog", label: "Blog", icon: BookOpen, path: "/blog" },
   { id: "faq", label: "FAQ", icon: HelpCircle, path: "/faq" },
-  { id: "profile", label: "Mon Profil", icon: User, path: "/profile" },
+  { id: "profile", label: "Mon Profil", icon: User, path: "/teacher/profile" },
 ];
 
 export const TeacherSidebar: React.FC = () => {
