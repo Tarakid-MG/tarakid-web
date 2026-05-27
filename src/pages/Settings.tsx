@@ -10,6 +10,8 @@ import {
   ArrowLeft,
   Loader2,
   CheckCircle,
+  Plus,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContextDefinition";
 import { useKidMode } from "../hooks/useKidMode";
@@ -46,6 +48,7 @@ export default function Settings() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     selectedKid?.avatarUrl || null,
   );
+  const kids = user?.kids || [];
 
   useEffect(() => {
     if (user) {
@@ -172,6 +175,59 @@ export default function Settings() {
             <p className="font-bold">{errorMsg}</p>
           </div>
         )}
+
+        <section className="mb-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-3">
+                <div className="rounded-2xl bg-blue/10 p-3">
+                  <Users className="h-6 w-6 text-blue" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-navy">
+                    Profils enfants
+                  </h2>
+                  <p className="text-sm font-medium text-navy/55">
+                    Sélectionnez un enfant à modifier ou ajoutez-en un autre.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {kids.map((kid) => {
+                  const active = selectedKid?.id === kid.id;
+                  return (
+                    <button
+                      key={kid.id}
+                      type="button"
+                      onClick={() => updateSelectedKid(kid)}
+                      className={[
+                        "rounded-2xl border px-4 py-3 text-left transition-all",
+                        active
+                          ? "border-blue/20 bg-blue/8 text-blue shadow-[0_12px_24px_rgba(33,158,188,0.12)]"
+                          : "border-slate-200 bg-slate-50 text-navy hover:border-blue/20 hover:bg-white",
+                      ].join(" ")}
+                    >
+                      <div className="text-sm font-black">{kid.name}</div>
+                      <div className="mt-1 text-xs font-medium opacity-70">
+                        {kid.age} ans
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/quiz")}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gold px-5 py-4 font-black text-white shadow-lg shadow-gold/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="h-5 w-5" />
+              Ajouter un enfant
+            </button>
+          </div>
+        </section>
 
         <div className="grid gap-8 md:grid-cols-2">
           {/* Parent Profile */}
