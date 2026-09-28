@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { VideoOff } from "lucide-react";
 import { useAuth } from "../../context/AuthContextDefinition";
+import { kidService } from "../../services/kid.service";
 import lessonService from "../../services/lesson.service";
 
 // Hooks
@@ -147,7 +148,6 @@ const Classroom: React.FC<Props> = ({ bookingId, userId }) => {
       setStars((prev) => prev + 1);
       setTotalStars((prev) => prev + 1);
       setStarBurstKey((prev) => prev + 1);
-      const { kidService } = await import("../../services/kid.service");
       const updatedKid = await kidService.addStar(booking.kid.id);
       if (typeof updatedKid.stars === "number") {
         setTotalStars(updatedKid.stars);

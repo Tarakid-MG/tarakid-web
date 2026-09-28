@@ -1,8 +1,13 @@
-import React, { useRef, useEffect } from "react";
+import React, { Suspense, lazy, useRef, useEffect } from "react";
 import { Clock, MessageSquare, Users, Loader2 } from "lucide-react";
-import { DocumentViewer } from "../DocumentViewer";
 import type { Lesson, RemotePointer } from "../types";
 import { Socket } from "socket.io-client";
+
+const DocumentViewer = lazy(() =>
+  import("../DocumentViewer").then((module) => ({
+    default: module.DocumentViewer,
+  })),
+);
 
 interface LessonContentProps {
   lesson: Lesson | null;
@@ -66,6 +71,17 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       });
     }
   }, [lesson, decodedContent, lessonContentIsUrl, geniallyContainerRef]);
+
+  const documentLoadingFallback = (
+    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,249,251,0.96))]">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-blue" />
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-navy/60">
+          Chargement du document
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex-3 relative overflow-hidden border-r border-slate-100/70 flex flex-col p-4 md:p-6 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(245,250,252,0.96))]">
@@ -137,12 +153,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </div>
               </div>
             ) : (
-              <DocumentViewer
-                url={resolveAssetUrl(lesson.content)}
-                socket={socket}
-                bookingId={bookingId}
-                isTeacher={isTeacher}
-              />
+              <Suspense fallback={documentLoadingFallback}>
+                <DocumentViewer
+                  url={resolveAssetUrl(lesson.content)}
+                  socket={socket}
+                  bookingId={bookingId}
+                  isTeacher={isTeacher}
+                />
+              </Suspense>
             )}
 
             {remotePointer && (

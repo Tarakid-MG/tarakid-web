@@ -62,7 +62,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
     <div
       className="fixed inset-0 z-50 bg-black flex flex-col"
       style={{
-        backgroundImage: "url('/images/classroom.png')",
+        backgroundImage: "url('/images/backgrounds/classroom.png')",
         backgroundSize: "cover",
       }}
     >
