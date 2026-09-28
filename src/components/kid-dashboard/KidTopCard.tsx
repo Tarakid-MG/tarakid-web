@@ -1,4 +1,6 @@
 import React from "react";
+import { Badge } from "../ui/Badge";
+import { Card } from "../ui/Card";
 
 export function KidTopCard({
   icon,
@@ -14,7 +16,10 @@ export function KidTopCard({
   badge?: string;
 }) {
   return (
-    <div className="rounded-[2.2rem] border-4 border-white/85 bg-white/88 px-5 py-4 shadow-[0_16px_38px_rgba(32,42,68,0.12)] backdrop-blur-md">
+    <Card
+      variant="parentPanel"
+      className="kid-pop-in rounded-[2.2rem] border-4 border-white/85 bg-white/88 px-5 py-4 transition hover:-translate-y-0.5"
+    >
       <div className="flex items-center gap-4">
         <div className="shrink-0">{icon}</div>
         <div className="min-w-0">
@@ -25,12 +30,15 @@ export function KidTopCard({
             {value}
           </div>
           {badge && (
-            <div className="mt-2 inline-flex rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-orange">
+            <Badge
+              variant="orange"
+              className="mt-2 bg-orange/10 px-2.5 py-1 text-[10px] tracking-[0.18em] shadow-none"
+            >
               {badge}
-            </div>
+            </Badge>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

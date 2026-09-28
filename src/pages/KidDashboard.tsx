@@ -64,7 +64,7 @@ const KidDashboard: React.FC = () => {
           "radial-gradient(circle at top left, rgba(76,201,240,0.34), transparent 26%), radial-gradient(circle at bottom right, rgba(239,191,4,0.18), transparent 22%), linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(241,252,255,0.92) 40%, rgba(250,255,241,0.95) 100%)",
       }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[url('/images/kids-bg.png')] bg-cover bg-center opacity-30" />
+      <div className="pointer-events-none absolute inset-0 bg-[url('/images/backgrounds/kids-bg.png')] bg-cover bg-center opacity-30" />
       <div className="pointer-events-none absolute top-16 left-[18%] h-24 w-24 rounded-full bg-lightBlue/30 blur-3xl kid-float-slow" />
       <div className="pointer-events-none absolute right-[12%] top-20 h-28 w-28 rounded-full bg-yellow/20 blur-3xl kid-float-fast" />
       <div className="pointer-events-none absolute left-12 bottom-28 h-24 w-24 rounded-full bg-orange/20 blur-3xl kid-float-slow" />
@@ -83,7 +83,7 @@ const KidDashboard: React.FC = () => {
           </aside>
 
           <div className="flex-1 min-w-0">
-            <div className="w-full pb-44 space-y-5 md:space-y-6">
+            <div className="w-full pb-48 space-y-5 sm:pb-40 md:space-y-6 md:pb-44">
               <div className="flex justify-end xl:hidden">
                 <button
                   type="button"
@@ -102,7 +102,7 @@ const KidDashboard: React.FC = () => {
                     <img
                       src={kidArt.calendar}
                       alt=""
-                      className="h-12 w-12 object-contain kid-float-slow"
+                      className="h-12 w-12 object-contain kid-dance"
                     />
                   }
                   label="Prochain cours"
@@ -111,7 +111,7 @@ const KidDashboard: React.FC = () => {
                 />
                 <KidTopCard
                   icon={
-                    <div className="h-14 w-14 rounded-[1.6rem] bg-linear-to-br from-yellow to-gold border-4 border-white shadow-[0_8px_0_rgba(239,191,4,0.38)] flex items-center justify-center">
+                    <div className="h-14 w-14 rounded-[1.6rem] bg-linear-to-br from-yellow to-gold border-4 border-white shadow-[0_8px_0_rgba(239,191,4,0.38)] flex items-center justify-center kid-wiggle">
                       <Star className="w-7 h-7 text-navy fill-current" />
                     </div>
                   }
@@ -153,15 +153,15 @@ const KidDashboard: React.FC = () => {
                   </h2>
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {kidActions.map((action) => (
-                    <KidActionTile key={action.title} {...action} />
+                  {kidActions.map((action, index) => (
+                    <KidActionTile key={action.title} index={index} {...action} />
                   ))}
                 </div>
               </section>
 
               <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1.62fr)_minmax(360px,1fr)]">
                 <KidPathPanel starsProgress={Math.max(1, starsProgress)} />
-                <KidRewardPanel onClick={() => alert("Coffre bientôt disponible ✨")} />
+                <KidRewardPanel unlocked={totalStars >= 10} />
               </div>
             </div>
           </div>

@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
   BookOpen,
-  Gift,
-  GraduationCap,
-  Map,
-  Settings,
-  Trophy,
+  Gamepad2,
+  Home,
+  LogOut,
+  UserRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContextDefinition";
@@ -349,13 +347,11 @@ export function useKidDashboardState() {
     starsProgress === 0 && totalStars > 0 ? 100 : starsProgress * 10;
 
   const sidebarItems: SidebarItem[] = [
-    { label: "Accueil", icon: GraduationCap, active: true, onClick: () => navigate("/kid-dashboard") },
-    { label: "Leçons", icon: BookOpen, onClick: () => navigate("/lessons") },
-    { label: "Aventures", icon: Map, onClick: () => navigate("/lessons") },
-    { label: "Défis", icon: Trophy, onClick: () => navigate("/kid-games") },
-    { label: "Récompenses", icon: Gift, onClick: () => navigate("/lessons") },
-    { label: "Profil", icon: Bell, onClick: () => navigate("/kid-avatar") },
-    { label: "Paramètres", icon: Settings, onClick: () => setShowExitModal(true) },
+    { label: "Accueil", icon: Home, tone: "blue", active: true, onClick: () => navigate("/kid-dashboard") },
+    { label: "Leçons", icon: BookOpen, tone: "turquoise", onClick: () => navigate("/lessons") },
+    { label: "Jeux", icon: Gamepad2, tone: "yellow", onClick: () => navigate("/kid-games") },
+    { label: "Mon profil", icon: UserRound, tone: "orange", onClick: () => navigate("/kid-avatar") },
+    { label: "Sortir", icon: LogOut, tone: "slate", onClick: () => setShowExitModal(true) },
   ];
 
   const kidActions: KidAction[] = [
@@ -378,7 +374,8 @@ export function useKidDashboardState() {
       subtitle: "Regarde & répète",
       tone: "orange",
       art: kidArt.clapperboard,
-      onClick: () => alert("Bientôt disponible 🙂"),
+      onClick: () => {},
+      comingSoon: true,
     },
     {
       title: "JEUX",

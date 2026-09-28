@@ -17,11 +17,20 @@ export type KidAction = {
   tone: ActionTone;
   art: string;
   onClick: () => void;
+  comingSoon?: boolean;
 };
+
+export type SidebarItemTone =
+  | "blue"
+  | "turquoise"
+  | "yellow"
+  | "orange"
+  | "slate";
 
 export type SidebarItem = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  tone: SidebarItemTone;
   active?: boolean;
   onClick: () => void;
 };
@@ -52,6 +61,30 @@ export function formatNextClassFR(date?: string, start?: string) {
   if (!date || !start) return "Aucun cours prévu";
   const value = parseSafeDateTime(date, start);
   if (Number.isNaN(value.getTime())) return "Format date invalide";
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDay = new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate(),
+  );
+  const diffInDays = Math.round(
+    (targetDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  const timeLabel = value.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (diffInDays === 0) {
+    return `Aujourd'hui, ${timeLabel}`;
+  }
+
+  if (diffInDays === 1) {
+    return `Demain, ${timeLabel}`;
+  }
+
   return value.toLocaleDateString("fr-FR", {
     weekday: "short",
     day: "numeric",
