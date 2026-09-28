@@ -116,53 +116,29 @@ export const TeacherSidebar: React.FC<{ onNavigate?: () => void }> = ({
               key={item.id}
               to={item.path}
               onClick={onNavigate}
-              className="group flex items-center justify-between p-3.5 rounded-2xl transition-all duration-200"
-              style={
+              className={`group flex items-center justify-between p-3.5 rounded-2xl transition-all duration-200 ${
                 isActive
-                  ? {
-                      background: "var(--color-blue)",
-                      boxShadow: "0 4px 20px rgba(33,158,188,0.35)",
-                    }
-                  : {
-                      color: "rgba(255,255,255,0.45)",
-                    }
-              }
+                  ? "bg-blue shadow-[0_4px_20px_rgba(33,158,188,0.35)]"
+                  : "text-white/45"
+              }`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                  style={
-                    isActive
-                      ? {
-                          background: "rgba(255,255,255,0.15)",
-                        }
-                      : {
-                          background: "rgba(255,255,255,0.05)",
-                        }
-                  }
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    isActive ? "bg-white/15" : "bg-white/5"
+                  }`}
                 >
                   <item.icon
-                    className="w-4 h-4"
-                    style={{
-                      color: isActive ? "#fff" : "rgba(76,201,240,0.6)",
-                    }}
+                    className={`w-4 h-4 ${isActive ? "text-white" : "text-lightBlue/60"}`}
                   />
                 </div>
                 <span
-                  className="font-bold text-sm"
-                  style={{
-                    color: isActive ? "#fff" : "rgba(255,255,255,0.55)",
-                  }}
+                  className={`font-bold text-sm ${isActive ? "text-white" : "text-white/55"}`}
                 >
                   {item.label}
                 </span>
               </div>
-              {isActive && (
-                <ChevronRight
-                  className="w-4 h-4"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
-                />
-              )}
+              {isActive && <ChevronRight className="w-4 h-4 text-white/40" />}
             </Link>
           );
         })}
@@ -172,19 +148,7 @@ export const TeacherSidebar: React.FC<{ onNavigate?: () => void }> = ({
       <div className="px-4 pt-2 relative z-10">
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all group"
-          style={{ color: "rgba(255,255,255,0.35)" }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background =
-              "rgba(247,127,0,0.12)";
-            (e.currentTarget as HTMLElement).style.color =
-              "var(--color-orange)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "transparent";
-            (e.currentTarget as HTMLElement).style.color =
-              "rgba(255,255,255,0.35)";
-          }}
+          className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-white/35 transition-all hover:bg-orange/12 hover:text-orange group"
         >
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center"
