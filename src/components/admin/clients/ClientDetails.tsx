@@ -114,7 +114,7 @@ export const ClientDetails: React.FC<ClientDetailsProps> = ({
         {/* Header */}
         <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white relative">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[1.25rem] bg-blue/10 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue/10 flex items-center justify-center">
               <UserIcon className="w-8 h-8 text-blue" />
             </div>
             <div>

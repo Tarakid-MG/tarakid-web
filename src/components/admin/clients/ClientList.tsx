@@ -40,7 +40,7 @@ export const ClientList: React.FC<ClientListProps> = ({
 
   if (clients.length === 0) {
     return (
-      <div className="text-center py-16 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
+      <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
         <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
         <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
           Aucun client trouvé
@@ -57,7 +57,7 @@ export const ClientList: React.FC<ClientListProps> = ({
         return (
           <div
             key={c.id}
-            className="group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-4xl shadow-sm hover:border-blue/20 transition-all hover:shadow-md"
+            className="group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:border-blue/20 transition-all hover:shadow-md"
           >
             <div className="flex items-center gap-5 min-w-0">
               {/* Avatar/Icon */}
