@@ -1,0 +1,23 @@
+import React from "react";
+import { VocabSection } from "../../KidActivityExperienceSections";
+import type { KidActivityScenarioProps } from "../types";
+
+export const KidVocabL0U1L2: React.FC<KidActivityScenarioProps> = ({
+  flippedVocabIds,
+  isNegativeLesson,
+  keywordsWithAssets,
+  onToggleVocabCard,
+  pack,
+}) => (
+  <VocabSection
+    flippedVocabIds={flippedVocabIds}
+    isNegativeLesson={isNegativeLesson}
+    keywordsWithAssets={keywordsWithAssets}
+    sentencePattern={pack.sentencePattern}
+    onToggleCard={onToggleVocabCard}
+    resolveVocabAudioSrc={(keyword) => {
+      const audioName = keyword.imageName.replace(/\.[^.]+$/, "");
+      return `/audio/got/got-${audioName}.mp3`;
+    }}
+  />
+);

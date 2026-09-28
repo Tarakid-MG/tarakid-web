@@ -209,7 +209,7 @@ const KidAvatarPage: React.FC = () => {
     <div
       className="min-h-screen relative overflow-hidden p-4 md:p-8"
       style={{
-        backgroundImage: "url('/images/kids-bg.png')",
+        backgroundImage: "url('/images/backgrounds/kids-bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
