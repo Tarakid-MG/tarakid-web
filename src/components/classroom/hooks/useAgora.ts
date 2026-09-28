@@ -46,7 +46,21 @@ export const useAgora = (bookingId: string, userId: number) => {
           return;
         }
 
-        const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+        let tracks: [ILocalAudioTrack, ILocalVideoTrack];
+        try {
+          tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+        } catch (trackError) {
+          // We already joined the channel above; leave it so a denied
+          // camera/mic permission doesn't leave a dangling publisher
+          // connection open until the user reloads the page.
+          if (
+            client.connectionState === "CONNECTED" ||
+            client.connectionState === "CONNECTING"
+          ) {
+            await client.leave();
+          }
+          throw trackError;
+        }
         if (!isMounted) {
           tracks.forEach((t) => t.close());
           return;
