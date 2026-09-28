@@ -1,55 +1,83 @@
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
-import VerifyEmail from "./pages/auth/VerifyEmail";
-import TeacherLogin from "./pages/auth/TeacherLogin";
-import Quiz from "./pages/auth/Quiz";
-import FreeTrialBooking from "./pages/FreeTrialBooking";
-import Dashboard from "./pages/Dashboard";
-import TeacherDashboard from "./pages/TeacherDashboard";
-import TeacherNotifications from "./pages/TeacherNotifications";
-import TeacherProfile from "./pages/TeacherProfile";
 import { AuthProvider } from "./context/AuthContext";
 import { KidModeProvider } from "./context/KidModeContext";
-import { TeacherSessions } from "./pages/TeacherSessions";
-import KidDashboard from "./pages/KidDashboard";
-import KidAvatarPage from "./pages/KidAvatarPage";
-import KidVocabularyLessonsPage from "./pages/KidVocabularyLessonsPage";
-import KidExerciseLessonsPage from "./pages/KidExerciseLessonsPage";
-import KidGameLessonsPage from "./pages/KidGameLessonsPage";
-import KidVocabularyPage from "./pages/KidVocabularyPage";
-import KidExercisePage from "./pages/KidExercisePage";
-import KidGamePage from "./pages/KidGamePage";
 import QuizGuard from "./components/auth/QuizGuard";
-import SchedulePage from "./pages/SchedulePage";
-import SubscriptionPage from "./pages/SubscriptionPage";
-import HistoryPage from "./pages/HistoryPage";
-import BookingCalendarPage from "./pages/BookingCalendarPage";
-import LessonsPage from "./pages/LessonsPage";
-import LessonPlayerPage from "./pages/LessonPlayerPage";
-import { ClassroomWrapper } from "./pages/ClassroomPage";
-import Settings from "./pages/Settings";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import { ExitKidModeModal } from "./components/kid-mode/ExitKidModeModal";
 import TeacherGuard from "./components/auth/TeacherGuard";
 import { useKidMode } from "./hooks/useKidMode";
 import AdminGuard from "./components/auth/AdminGuard";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminBookings from "./pages/admin/AdminBookings";
-import AdminBookingHistory from "./pages/admin/AdminBookingHistory";
-import AdminTeachers from "./pages/admin/AdminTeachers";
-import AdminClients from "./pages/admin/AdminClients";
-import AdminLessons from "./pages/admin/AdminLessons";
-import AdminLevels from "./pages/admin/AdminLevels";
-import AdminFeedback from "./pages/admin/AdminFeedback";
+
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
+const TeacherLogin = lazy(() => import("./pages/auth/TeacherLogin"));
+const Quiz = lazy(() => import("./pages/auth/Quiz"));
+const FreeTrialBooking = lazy(() => import("./pages/FreeTrialBooking"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
+const TeacherNotifications = lazy(() => import("./pages/TeacherNotifications"));
+const TeacherProfile = lazy(() => import("./pages/TeacherProfile"));
+const TeacherSessions = lazy(() =>
+  import("./pages/TeacherSessions").then((module) => ({
+    default: module.TeacherSessions,
+  })),
+);
+const KidDashboard = lazy(() => import("./pages/KidDashboard"));
+const KidAvatarPage = lazy(() => import("./pages/KidAvatarPage"));
+const KidVocabularyLessonsPage = lazy(() =>
+  import("./pages/KidVocabularyLessonsPage"),
+);
+const KidExerciseLessonsPage = lazy(() =>
+  import("./pages/KidExerciseLessonsPage"),
+);
+const KidGameLessonsPage = lazy(() => import("./pages/KidGameLessonsPage"));
+const KidVocabularyPage = lazy(() => import("./pages/KidVocabularyPage"));
+const KidExercisePage = lazy(() => import("./pages/KidExercisePage"));
+const KidGamePage = lazy(() => import("./pages/KidGamePage"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const BookingCalendarPage = lazy(() => import("./pages/BookingCalendarPage"));
+const LessonsPage = lazy(() => import("./pages/LessonsPage"));
+const LessonPlayerPage = lazy(() => import("./pages/LessonPlayerPage"));
+const ClassroomWrapper = lazy(() =>
+  import("./pages/ClassroomPage").then((module) => ({
+    default: module.ClassroomWrapper,
+  })),
+);
+const Settings = lazy(() => import("./pages/Settings"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
+const AdminBookingHistory = lazy(() =>
+  import("./pages/admin/AdminBookingHistory"),
+);
+const AdminTeachers = lazy(() => import("./pages/admin/AdminTeachers"));
+const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+const AdminLessons = lazy(() => import("./pages/admin/AdminLessons"));
+const AdminLevels = lazy(() => import("./pages/admin/AdminLevels"));
+const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
+
+function AppRouteFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f5fbff_0%,#eef7fb_45%,#f7fbfd_100%)] px-6">
+      <div className="rounded-[2rem] border-4 border-white bg-white px-8 py-6 text-center shadow-[0_18px_40px_rgba(32,42,68,0.10)]">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue" />
+        <p className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-navy/70">
+          Loading
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const AppRoutes = () => {
   const { isKidMode, showExitModal } = useKidMode();
@@ -283,14 +311,6 @@ const AppRoutes = () => {
               }
             />
             <Route
-              path="/payment-success"
-              element={
-                <QuizGuard>
-                  <PaymentSuccessPage />
-                </QuizGuard>
-              }
-            />
-            <Route
               path="/teacher/dashboard"
               element={
                 <TeacherGuard>
@@ -409,7 +429,9 @@ function App() {
     <AuthProvider>
       <KidModeProvider>
         <Router>
-          <AppRoutes />
+          <Suspense fallback={<AppRouteFallback />}>
+            <AppRoutes />
+          </Suspense>
         </Router>
       </KidModeProvider>
     </AuthProvider>
