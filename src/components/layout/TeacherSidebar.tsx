@@ -39,13 +39,15 @@ const menuItems = [
   { id: "profile", label: "Mon Profil", icon: User, path: "/teacher/profile" },
 ];
 
-export const TeacherSidebar: React.FC = () => {
+export const TeacherSidebar: React.FC<{ onNavigate?: () => void }> = ({
+  onNavigate,
+}) => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
   return (
     <aside
-      className="w-72 h-screen sticky top-0 flex flex-col shrink-0 overflow-hidden"
+      className="relative w-72 h-full flex flex-col shrink-0 overflow-hidden"
       style={{ background: "var(--color-navy)" }}
     >
       {/* Top glow orb */}
@@ -113,6 +115,7 @@ export const TeacherSidebar: React.FC = () => {
             <Link
               key={item.id}
               to={item.path}
+              onClick={onNavigate}
               className="group flex items-center justify-between p-3.5 rounded-2xl transition-all duration-200"
               style={
                 isActive
