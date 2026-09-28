@@ -47,7 +47,7 @@ const LevelList: React.FC<LevelListProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => onEdit(l)}
                   className="p-2 hover:bg-white border border-transparent hover:border-slate-200 rounded-xl text-navy/40 hover:text-blue transition-all"

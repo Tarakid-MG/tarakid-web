@@ -133,7 +133,7 @@ export const LessonList: React.FC<LessonListProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => onEdit(l, u.id)}
                             className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"

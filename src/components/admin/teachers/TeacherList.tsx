@@ -114,7 +114,7 @@ export const TeacherList: React.FC<TeacherListProps> = ({
               {t.isActive ? "Actif" : "Inactif"}
             </div>
 
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+            <div className="flex items-center gap-1 ml-2">
               <button
                 onClick={() => onViewSchedule(t)}
                 className="w-8 h-8 rounded-xl bg-teal/5 text-teal flex items-center justify-center hover:bg-teal hover:text-white transition-all"
