@@ -1,7 +1,6 @@
-
 import { X } from "lucide-react";
 import { Button } from "../ui/Button";
-import { ParentPanel } from "./ParentPanel";
+import { ParentPanel } from "../layout/ParentPanel";
 
 export function ParentCancelBookingModal({
   open,
@@ -34,19 +33,28 @@ export function ParentCancelBookingModal({
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-red-50 text-red-500">
               <X className="h-6 w-6" />
             </div>
-            <h3 className="text-2xl font-black text-navy">Annuler le cours ?</h3>
-            <p className="mt-3 text-base leading-7 text-navy/60">Vous pourrez toujours réserver un autre créneau plus tard.</p>
+            <h3 className="text-2xl font-black text-navy">
+              Annuler le cours ?
+            </h3>
+            <p className="mt-3 text-base leading-7 text-navy/60">
+              Vous pourrez toujours réserver un autre créneau plus tard.
+            </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button
-                variant="outline"
+                variant="parentOutlineBlue"
                 onClick={onClose}
                 disabled={loading}
-                className="rounded-[1.2rem] border-blue/20 text-blue hover:bg-blue/6"
+                className="rounded-[1.2rem]"
               >
                 Garder
               </Button>
-              <Button onClick={onConfirm} loading={loading} className="rounded-[1.2rem] bg-red-500 hover:bg-red-600">
+              <Button
+                onClick={onConfirm}
+                variant="danger"
+                loading={loading}
+                className="rounded-[1.2rem]"
+              >
                 Oui, annuler
               </Button>
             </div>
@@ -56,4 +64,3 @@ export function ParentCancelBookingModal({
     </div>
   );
 }
-

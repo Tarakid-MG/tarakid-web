@@ -64,6 +64,7 @@ const Dashboard: React.FC = () => {
         onHistory: () => navigate("/history"),
         onActivities: openKidMode,
         onSettings: () => navigate("/settings"),
+        activeItem: "dashboard",
       }),
     [navigate, openKidMode],
   );
@@ -178,15 +179,15 @@ const Dashboard: React.FC = () => {
               onSubscription={() => navigate("/subscription")}
             />
 
-              <ParentKpiPath
-                stats={dashboardStats.map((stat) => ({
-                  ...stat,
-                  value: loading ? "…" : stat.value,
-                }))}
-                onStatClick={handleStatClick}
-              />
+            <ParentKpiPath
+              stats={dashboardStats.map((stat) => ({
+                ...stat,
+                value: loading ? "…" : stat.value,
+              }))}
+              onStatClick={handleStatClick}
+            />
 
-            <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1.5fr)_minmax(370px,0.84fr)]">
+            <div className="grid grid-cols-1 gap-7 2xl:grid-cols-[minmax(0,1.52fr)_minmax(390px,0.9fr)]">
               <div className="space-y-6">
                 <ParentNextCourseCard
                   kidName={kidName}
@@ -208,7 +209,7 @@ const Dashboard: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-7">
                 <ParentLevelCard
                   kidName={kidName}
                   kidLevel={selectedLevel}

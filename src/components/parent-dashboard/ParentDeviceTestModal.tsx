@@ -1,8 +1,8 @@
-
 import type { RefObject } from "react";
 import { Camera, CheckCircle, HelpCircle, Mic, X } from "lucide-react";
+import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
-import { ParentOrb, ParentPanel } from "./ParentPanel";
+import { ParentOrb, ParentPanel } from "../layout/ParentPanel";
 
 export function ParentDeviceTestModal({
   open,
@@ -47,25 +47,38 @@ export function ParentDeviceTestModal({
               <HelpCircle className="h-6 w-6" />
             </ParentOrb>
             <div>
-              <h3 className="text-2xl font-black text-navy">Test de matériel</h3>
+              <h3 className="text-2xl font-black text-navy">
+                Test de matériel
+              </h3>
               <p className="mt-2 text-base leading-7 text-navy/60">
-                Vérifiez votre caméra, votre micro et les permissions du navigateur avant le cours.
+                Vérifiez votre caméra, votre micro et les permissions du
+                navigateur avant le cours.
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50/75 p-4">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-navy/55">Aperçu caméra</p>
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-navy/55">
+                Aperçu caméra
+              </p>
               <div className="mt-4 aspect-video overflow-hidden rounded-[1.5rem] bg-navy/92">
                 {deviceStatus.camera ? (
-                  <video ref={videoPreviewRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+                  <video
+                    ref={videoPreviewRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-center text-white/75">
                     <div>
                       <Camera className="mx-auto h-9 w-9" />
                       <p className="mt-3 text-sm font-semibold">
-                        {isTesting ? "Initialisation de la caméra..." : "Caméra indisponible"}
+                        {isTesting
+                          ? "Initialisation de la caméra..."
+                          : "Caméra indisponible"}
                       </p>
                     </div>
                   </div>
@@ -77,10 +90,19 @@ export function ParentDeviceTestModal({
               <DeviceStatusTile
                 icon={CheckCircle}
                 label="Navigateur"
-                value={deviceStatus.browser ? "Compatible avec le test" : "Navigateur non compatible"}
+                value={
+                  deviceStatus.browser
+                    ? "Compatible avec le test"
+                    : "Navigateur non compatible"
+                }
                 ok={deviceStatus.browser}
               />
-              <DeviceStatusTile icon={Camera} label="Caméra" value={deviceStatus.camera ? "Détectée" : "Non détectée"} ok={deviceStatus.camera} />
+              <DeviceStatusTile
+                icon={Camera}
+                label="Caméra"
+                value={deviceStatus.camera ? "Détectée" : "Non détectée"}
+                ok={deviceStatus.camera}
+              />
               <DeviceStatusTile
                 icon={Mic}
                 label="Microphone"
@@ -98,10 +120,18 @@ export function ParentDeviceTestModal({
           ) : null}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button variant="outline" onClick={onClose} className="rounded-[1.2rem] border-blue/20 text-blue hover:bg-blue/6">
+            <Button
+              variant="parentOutlineBlue"
+              onClick={onClose}
+              className="rounded-[1.2rem]"
+            >
               Fermer
             </Button>
-            <Button onClick={onRetry} loading={isTesting} className="rounded-[1.2rem]">
+            <Button
+              onClick={onRetry}
+              loading={isTesting}
+              className="rounded-[1.2rem]"
+            >
               Relancer le test
             </Button>
           </div>
@@ -125,7 +155,10 @@ function DeviceStatusTile({
   meter?: number;
 }) {
   return (
-    <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(32,42,68,0.04)]">
+    <Card
+      variant="default"
+      className="rounded-[1.6rem] p-4 shadow-[0_10px_24px_rgba(32,42,68,0.04)]"
+    >
       <div className="flex items-start gap-3">
         <div
           className={[
@@ -148,7 +181,6 @@ function DeviceStatusTile({
           ) : null}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
-

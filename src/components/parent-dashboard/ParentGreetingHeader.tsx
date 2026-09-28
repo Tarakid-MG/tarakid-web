@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight, Gamepad2, Sparkles } from "lucide-react";
-import { ParentOrb, ParentPanel } from "./ParentPanel";
+import { ParentOrb, ParentPanel } from "../layout/ParentPanel";
 
 export function ParentGreetingHeader({
   parentName,
@@ -26,7 +26,8 @@ export function ParentGreetingHeader({
             <span className="ml-2 inline-block rotate-12 text-gold">👋</span>
           </h1>
           <p className="mt-3 text-base leading-7 text-navy/62 md:text-lg">
-            Voici un aperçu clair des cours, progrès et activités de {kidName} aujourd&apos;hui.
+            Voici un aperçu clair des cours, progrès et activités de {kidName}{" "}
+            aujourd&apos;hui.
           </p>
         </div>
 
@@ -75,7 +76,7 @@ function ParentFeatureButton({
           "relative h-full min-h-[132px] overflow-hidden transition duration-200",
           accent === "blue"
             ? "bg-linear-to-br from-blue via-lightBlue to-[#27c2f3] p-4 text-white hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(33,158,188,0.18)]"
-            : "flex items-center gap-4 px-3 py-3 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(32,42,68,0.13)]",
+            : "flex items-center gap-4 border-gold/15 bg-linear-to-br from-[#fffef8] via-white to-[#fff5cf] px-3 py-3 shadow-[inset_0_0_0_1px_rgba(239,191,4,0.12)] hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(32,42,68,0.13)]",
         ].join(" ")}
       >
         {accent === "blue" ? (
@@ -111,13 +112,21 @@ function ParentFeatureButton({
         ) : (
           <>
             <div className="h-16 w-16 rounded-full border-4 border-white shadow-[0_14px_30px_rgba(32,42,68,0.13)]">
-              <ParentOrb accent="gold" className="h-full w-full rounded-full border-0 shadow-none">
+              <ParentOrb
+                accent="gold"
+                className="h-full w-full rounded-full border-0 shadow-none"
+              >
                 {icon}
               </ParentOrb>
             </div>
             <div className="min-w-0 flex-1 text-left">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-navy/40">
+                Parent
+              </p>
               <p className="truncate text-xl font-black text-navy">{title}</p>
-              <p className="mt-1 text-sm font-medium text-navy/55">{subtitle}</p>
+              <p className="mt-1 text-sm font-medium text-navy/55">
+                {subtitle}
+              </p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-navy/55 transition group-hover:translate-x-1">
               <ArrowRight className="h-5 w-5" />

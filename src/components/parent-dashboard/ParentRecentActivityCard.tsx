@@ -1,5 +1,7 @@
 import { ArrowRight } from "lucide-react";
-import { ParentPanel } from "./ParentPanel";
+import { ParentPanel } from "../layout/ParentPanel";
+import { Badge } from "../ui/Badge";
+import { Button } from "../ui/Button";
 import { getActivityIcon, type ParentActivity } from "./parentDashboardUtils";
 
 export function ParentRecentActivityCard({
@@ -13,16 +15,20 @@ export function ParentRecentActivityCard({
     <ParentPanel className="p-5 md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-[1.5rem] font-bold tracking-[-0.02em] text-navy">Activité récente</h3>
-          <p className="mt-1 text-[15px] text-navy/58">Historique des activités et progrès.</p>
+          <h3 className="text-[1.5rem] font-bold tracking-[-0.02em] text-navy">
+            Activité récente
+          </h3>
+          <p className="mt-1 text-[15px] text-navy/58">
+            Historique des activités et progrès.
+          </p>
         </div>
-        <button
-          type="button"
+        <Button
           onClick={onViewAll}
-          className="inline-flex items-center justify-center gap-2 rounded-full border border-blue/18 bg-white px-4 py-2 text-sm font-bold text-blue transition hover:bg-blue/6"
+          variant="parentOutlineBlue"
+          className="rounded-full border-blue/18 bg-white px-4 py-2 text-sm"
         >
           Voir tout
-        </button>
+        </Button>
       </div>
 
       <div className="mt-5 space-y-2">
@@ -50,12 +56,16 @@ export function ParentRecentActivityCard({
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[1.05rem] font-medium tracking-[-0.01em] text-navy">{activity.title}</p>
+                <p className="line-clamp-2 text-[1.05rem] font-medium leading-snug tracking-[-0.01em] text-navy sm:truncate sm:leading-normal">
+                  {activity.title}
+                </p>
                 <p className="mt-1 text-sm text-navy/55">{activity.date}</p>
               </div>
 
               {activity.score ? (
-                <span className="rounded-full bg-turquoise/15 px-3 py-2 text-sm font-bold text-teal">{activity.score}</span>
+                <Badge variant="teal" className="px-3 py-2 text-sm normal-case tracking-normal">
+                  {activity.score}
+                </Badge>
               ) : null}
 
               <ArrowRight className="h-4 w-4 text-navy/25 transition group-hover:translate-x-1 group-hover:text-blue" />

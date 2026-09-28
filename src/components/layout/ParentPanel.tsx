@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Card } from "../ui/Card";
 
 export function ParentPanel({
   children,
@@ -8,15 +9,9 @@ export function ParentPanel({
   className?: string;
 }) {
   return (
-    <div
-      className={[
-        "rounded-[1.85rem] border border-white/90 bg-white/92 shadow-[0_18px_44px_rgba(32,42,68,0.07)] backdrop-blur-xl",
-        "ring-1 ring-slate-900/2",
-        className,
-      ].join(" ")}
-    >
+    <Card variant="parentPanel" className={className}>
       {children}
-    </div>
+    </Card>
   );
 }
 

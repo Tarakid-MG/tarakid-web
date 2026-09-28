@@ -10,7 +10,6 @@ import {
   Home,
   MessageCircle,
   PlayCircle,
-  Settings,
   Trophy,
   UserCircle2,
   Zap,
@@ -197,22 +196,53 @@ export function buildParentSidebarItems({
   onHistory,
   onActivities,
   onSettings,
+  activeItem = "dashboard",
 }: {
   onDashboard: () => void;
   onSchedule: () => void;
   onHistory: () => void;
   onActivities: () => void;
   onSettings: () => void;
+  activeItem?:
+    | "dashboard"
+    | "schedule"
+    | "history"
+    | "activities"
+    | "profile";
 }): ParentSidebarItem[] {
   return [
-    { label: "Accueil", icon: Home, active: true, onClick: onDashboard },
-    { label: "Emploi du temps", icon: Calendar, onClick: onSchedule },
-    { label: "Progrès", icon: BookOpen, onClick: onHistory },
-    { label: "Activités", icon: Gamepad2, onClick: onActivities },
+    {
+      label: "Accueil",
+      icon: Home,
+      active: activeItem === "dashboard",
+      onClick: onDashboard,
+    },
+    {
+      label: "Emploi du temps",
+      icon: Calendar,
+      active: activeItem === "schedule",
+      onClick: onSchedule,
+    },
+    {
+      label: "Progrès",
+      icon: BookOpen,
+      active: activeItem === "history",
+      onClick: onHistory,
+    },
+    {
+      label: "Activités",
+      icon: Gamepad2,
+      active: activeItem === "activities",
+      onClick: onActivities,
+    },
     { label: "Historique", icon: History, onClick: onHistory },
     { label: "Messages", icon: MessageCircle, disabled: true, badge: "Bientôt" },
-    { label: "Profil", icon: UserCircle2, onClick: onSettings },
-    { label: "Réglages", icon: Settings, onClick: onSettings },
+    {
+      label: "Profil",
+      icon: UserCircle2,
+      active: activeItem === "profile",
+      onClick: onSettings,
+    },
   ];
 }
 

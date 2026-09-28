@@ -1,6 +1,7 @@
 import { Sparkles, Trophy } from "lucide-react";
 import { ParentPanel } from "./ParentPanel";
-import type { ParentSidebarItem } from "./parentDashboardUtils";
+import { Badge } from "../ui/Badge";
+import type { ParentSidebarItem } from "../parent-dashboard/parentDashboardUtils";
 
 export function ParentSidebar({
   kidName,
@@ -12,9 +13,17 @@ export function ParentSidebar({
   return (
     <div className="space-y-5">
       <ParentPanel className="px-4 py-5">
-        <img src="/logo/tarakid-logo.png" alt="TaraKid" className="w-34 object-contain" />
+        <img
+          src="/logo/tarakid-logo.png"
+          alt="TaraKid"
+          className="w-34 object-contain"
+        />
 
-        <nav className="mt-7 space-y-2">
+        <p className="mt-6 px-2 text-[11px] font-black uppercase tracking-[0.22em] text-navy/32">
+          Navigation
+        </p>
+
+        <nav className="mt-3 space-y-2">
           {items.map((item) => {
             const Icon = item.icon;
             return (
@@ -41,12 +50,14 @@ export function ParentSidebar({
                   <Icon className="h-5 w-5 shrink-0" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="whitespace-nowrap text-[15px] font-medium tracking-[-0.01em]">{item.label}</div>
+                  <div className="whitespace-nowrap text-[15px] font-medium tracking-[-0.01em]">
+                    {item.label}
+                  </div>
                 </div>
                 {item.badge ? (
-                  <span className="rounded-full bg-gold/15 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-orange">
+                  <Badge variant="yellow" className="px-2 py-1 text-[10px]">
                     {item.badge}
-                  </span>
+                  </Badge>
                 ) : null}
               </button>
             );
@@ -67,8 +78,12 @@ export function ParentSidebar({
         </div>
 
         <div className="mt-4 text-center">
-          <p className="text-lg font-bold tracking-[-0.02em] text-navy">Encouragez {kidName}</p>
-          <p className="mt-2 text-sm leading-6 text-navy/65">Chaque étape compte dans son apprentissage !</p>
+          <p className="text-lg font-bold tracking-[-0.02em] text-navy">
+            Encouragez {kidName}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-navy/65">
+            Chaque étape compte dans son apprentissage !
+          </p>
         </div>
       </ParentPanel>
     </div>

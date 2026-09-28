@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { ParentKidAvatar } from "./ParentKidAvatar";
-import { ParentPanel } from "./ParentPanel";
+import { ParentPanel } from "../layout/ParentPanel";
 
 export function ParentLevelCard({
   kidName,
@@ -18,7 +18,11 @@ export function ParentLevelCard({
   onAvatarClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onAvatarClick} className="group w-full text-left">
+    <button
+      type="button"
+      onClick={onAvatarClick}
+      className="group w-full text-left"
+    >
       <ParentPanel className="relative overflow-hidden bg-linear-to-br from-blue via-lightBlue to-[#27c2f3] p-5 text-white transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(33,158,188,0.18)] md:p-6">
         <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/12" />
         <div className="absolute -bottom-14 right-20 h-36 w-36 rounded-full bg-white/10" />
@@ -29,10 +33,16 @@ export function ParentLevelCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 fill-yellow text-yellow" />
-              <span className="text-[0.95rem] font-bold uppercase tracking-[0.08em]">Niveau {kidLevel}</span>
+              <span className="text-[0.95rem] font-bold uppercase tracking-[0.08em]">
+                Niveau {kidLevel}
+              </span>
             </div>
-            <p className="mt-2 text-[1.65rem] font-bold leading-tight tracking-[-0.03em]">{levelLabel}</p>
-            <p className="mt-6 text-sm font-medium text-white/86">Progression de l&apos;apprentissage</p>
+            <p className="mt-2 text-[1.65rem] font-bold leading-tight tracking-[-0.03em]">
+              {levelLabel}
+            </p>
+            <p className="mt-6 text-sm font-medium text-white/86">
+              Progression de l&apos;apprentissage
+            </p>
             <div className="mt-4 flex items-center gap-4">
               <div className="h-4 flex-1 overflow-hidden rounded-full bg-white/22">
                 <div
@@ -40,7 +50,9 @@ export function ParentLevelCard({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <span className="text-2xl font-bold tracking-[-0.03em]">{progress}%</span>
+              <span className="text-2xl font-bold tracking-[-0.03em]">
+                {progress}%
+              </span>
             </div>
           </div>
 
