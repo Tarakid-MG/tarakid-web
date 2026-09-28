@@ -4,6 +4,7 @@ import { adminService } from "../../services/admin.service";
 import AdminLayout from "./AdminLayout";
 import { ClientList } from "../../components/admin/clients/ClientList";
 import { ClientDetails } from "../../components/admin/clients/ClientDetails";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { type User } from "../../types/auth";
 
 const AdminClients: React.FC = () => {
@@ -11,6 +12,9 @@ const AdminClients: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<User | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -28,22 +32,22 @@ const AdminClients: React.FC = () => {
     fetchClients();
   }, [fetchClients]);
 
-  const handleToggleStatus = async (client: User) => {
-    if (
-      !window.confirm(
-        `${client.isActive ? "Désactiver" : "Réactiver"} ce compte parent ?`,
-      )
-    )
-      return;
+  const handleConfirmToggleStatus = async () => {
+    if (!toggleTarget) return;
+    setTogglingStatus(true);
+    setStatusError(null);
     try {
-      if (client.isActive) {
-        await adminService.deactivateClient(client.id);
+      if (toggleTarget.isActive) {
+        await adminService.deactivateClient(toggleTarget.id);
       } else {
-        await adminService.reactivateClient(client.id);
+        await adminService.reactivateClient(toggleTarget.id);
       }
       await fetchClients();
+      setToggleTarget(null);
     } catch {
-      alert("Erreur lors de la mise à jour du statut");
+      setStatusError("Erreur lors de la mise à jour du statut");
+    } finally {
+      setTogglingStatus(false);
     }
   };
 
@@ -128,7 +132,10 @@ const AdminClients: React.FC = () => {
               clients={filteredClients}
               loading={loading}
               onViewDetails={(c) => setSelectedClient(c)}
-              onToggleStatus={handleToggleStatus}
+              onToggleStatus={(c) => {
+                setStatusError(null);
+                setToggleTarget(c);
+              }}
             />
           )}
         </div>
@@ -142,6 +149,26 @@ const AdminClients: React.FC = () => {
           onRefresh={fetchClients}
         />
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(toggleTarget)}
+        title={
+          toggleTarget?.isActive
+            ? "Désactiver ce compte parent ?"
+            : "Réactiver ce compte parent ?"
+        }
+        message={
+          statusError ||
+          (toggleTarget?.isActive
+            ? "Ce parent ne pourra plus se connecter tant que son compte n'est pas réactivé."
+            : "Ce parent pourra de nouveau se connecter et réserver des cours.")
+        }
+        variant={toggleTarget?.isActive ? "danger" : "info"}
+        confirmLabel={toggleTarget?.isActive ? "Désactiver" : "Réactiver"}
+        loading={togglingStatus}
+        onConfirm={handleConfirmToggleStatus}
+        onCancel={() => setToggleTarget(null)}
+      />
     </AdminLayout>
   );
 };

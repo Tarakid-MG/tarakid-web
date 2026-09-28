@@ -149,6 +149,7 @@ const AdminDashboard: React.FC = () => {
               Créneaux sans professeur
             </h2>
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100">
@@ -191,6 +192,7 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
               {pending.length > 5 && (
                 <div className="px-4 py-3 border-t border-slate-100 text-center">
                   <button

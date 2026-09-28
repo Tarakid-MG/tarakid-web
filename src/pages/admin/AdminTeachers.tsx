@@ -14,6 +14,7 @@ import {
 import { TeacherForm } from "../../components/admin/teachers/TeacherForm";
 import { TeacherList } from "../../components/admin/teachers/TeacherList";
 import { TeacherScheduleView } from "../../components/admin/teachers/TeacherScheduleView";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 
 const tabs = [
   { id: "create" as Tab, label: "Créer un prof", icon: UserPlus },
@@ -117,22 +118,26 @@ const AdminTeachers: React.FC = () => {
     setMessage(null);
   };
 
-  const handleToggleStatus = async (t: User) => {
-    if (
-      !window.confirm(
-        `${t.isActive ? "Désactiver" : "Réactiver"} ce professeur ?`,
-      )
-    )
-      return;
+  const [toggleTarget, setToggleTarget] = useState<User | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+
+  const handleConfirmToggleStatus = async () => {
+    if (!toggleTarget) return;
+    setTogglingStatus(true);
+    setToggleError(null);
     try {
-      if (t.isActive) {
-        await adminService.deactivateTeacher(t.id);
+      if (toggleTarget.isActive) {
+        await adminService.deactivateTeacher(toggleTarget.id);
       } else {
-        await adminService.reactivateTeacher(t.id);
+        await adminService.reactivateTeacher(toggleTarget.id);
       }
       await fetchTeachers();
+      setToggleTarget(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erreur");
+      setToggleError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setTogglingStatus(false);
     }
   };
 
@@ -197,7 +202,10 @@ const AdminTeachers: React.FC = () => {
               teachers={teachers}
               loading={loading}
               onEdit={handleEdit}
-              onToggleStatus={handleToggleStatus}
+              onToggleStatus={(t) => {
+                setToggleError(null);
+                setToggleTarget(t);
+              }}
               onViewSchedule={(t) => setSelectedTeacherForSchedule(t)}
             />
           )}
@@ -215,6 +223,26 @@ const AdminTeachers: React.FC = () => {
           onClose={() => setSelectedTeacherForSchedule(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(toggleTarget)}
+        title={
+          toggleTarget?.isActive
+            ? "Désactiver ce professeur ?"
+            : "Réactiver ce professeur ?"
+        }
+        message={
+          toggleError ||
+          (toggleTarget?.isActive
+            ? "Ce professeur ne pourra plus se connecter ni recevoir de nouveaux cours."
+            : "Ce professeur pourra de nouveau se connecter et être assigné à des cours.")
+        }
+        variant={toggleTarget?.isActive ? "danger" : "info"}
+        confirmLabel={toggleTarget?.isActive ? "Désactiver" : "Réactiver"}
+        loading={togglingStatus}
+        onConfirm={handleConfirmToggleStatus}
+        onCancel={() => setToggleTarget(null)}
+      />
     </AdminLayout>
   );
 };

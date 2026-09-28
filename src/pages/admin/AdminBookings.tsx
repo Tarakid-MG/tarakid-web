@@ -19,6 +19,7 @@ import {
 } from "../../services/admin.service";
 import { type User } from "../../types/auth";
 import AdminLayout from "./AdminLayout";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 
 type Tab = "regular" | "trial" | "assigned" | "history";
 
@@ -435,6 +436,10 @@ const AdminBookings: React.FC = () => {
   const [batchAssigning, setBatchAssigning] = useState(false);
   const [subTab, setSubTab] = useState<"regular" | "trial">("regular");
   const [detailsBookingId, setDetailsBookingId] = useState<string | null>(null);
+  const [unassignTarget, setUnassignTarget] = useState<
+    { id: string | number; type?: string } | null
+  >(null);
+  const [unassigning, setUnassigning] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -592,20 +597,28 @@ const AdminBookings: React.FC = () => {
     }
   };
 
-  const handleUnassign = async (id: string | number, type?: string) => {
+  const handleUnassign = (id: string | number, type?: string) => {
     if (!type) {
       setError("Type de réservation manquant pour la désassignation");
       return;
     }
-    if (!window.confirm("Êtes-vous sûr de vouloir désassigner le professeur ?"))
-      return;
-    setLoading(true);
+    setUnassignTarget({ id, type });
+  };
+
+  const handleConfirmUnassign = async () => {
+    if (!unassignTarget?.type) return;
+    setUnassigning(true);
     try {
-      await adminService.unassignTeacher(String(id), type.toUpperCase());
+      await adminService.unassignTeacher(
+        String(unassignTarget.id),
+        unassignTarget.type.toUpperCase(),
+      );
       await fetchData();
+      setUnassignTarget(null);
     } catch {
       setError("Erreur lors de la désassignation");
-      setLoading(false);
+    } finally {
+      setUnassigning(false);
     }
   };
 
@@ -791,6 +804,7 @@ const AdminBookings: React.FC = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue" />
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-slate-100">
                 <tr>
@@ -1135,6 +1149,7 @@ const AdminBookings: React.FC = () => {
                   ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -1155,6 +1170,17 @@ const AdminBookings: React.FC = () => {
             onRefresh={fetchData}
           />
         )}
+
+        <ConfirmModal
+          isOpen={Boolean(unassignTarget)}
+          title="Désassigner le professeur ?"
+          message="Ce créneau redeviendra 'en attente' et devra être réassigné à un autre professeur."
+          variant="danger"
+          confirmLabel="Désassigner"
+          loading={unassigning}
+          onConfirm={handleConfirmUnassign}
+          onCancel={() => setUnassignTarget(null)}
+        />
       </div>
     </AdminLayout>
   );
