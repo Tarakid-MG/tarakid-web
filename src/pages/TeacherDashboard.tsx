@@ -148,13 +148,7 @@ const TeacherDashboard: React.FC = () => {
     return (
       <TeacherLayout>
         <div className="p-8 flex items-center justify-center h-[80vh]">
-          <div
-            className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
-            style={{
-              borderColor: "var(--color-blue)",
-              borderTopColor: "transparent",
-            }}
-          />
+          <div className="w-12 h-12 rounded-full border-2 border-blue border-t-transparent animate-spin" />
         </div>
       </TeacherLayout>
     );
@@ -174,11 +168,10 @@ const TeacherDashboard: React.FC = () => {
                 Tableau professeur
               </div>
               <h1
-                className="text-3xl md:text-4xl font-black leading-tight"
-                style={{ color: "var(--color-navy)" }}
+                className="text-3xl md:text-4xl font-black leading-tight text-navy"
               >
                 Bonjour,{" "}
-                <span style={{ color: "var(--color-blue)" }}>
+                <span className="text-blue">
                   {user?.firstName || "Professeur"}
                 </span>
               </h1>
@@ -242,8 +235,7 @@ const TeacherDashboard: React.FC = () => {
           {/* Commitment Mesure */}
           <div className="xl:col-span-3 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
             <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
-              style={{ background: "#ef4444", filter: "blur(30px)" }}
+              className="absolute top-0 right-0 w-32 h-32 rounded-full bg-red-500 blur-[30px] opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
             />
             <div className="absolute top-2 right-2 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
               <Heart className="w-24 h-24 fill-red-500" />
@@ -252,8 +244,7 @@ const TeacherDashboard: React.FC = () => {
             <div className="flex flex-col gap-5 relative z-10">
               <div className="flex items-center gap-4">
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(239,68,68,0.1)" }}
+                  className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center"
                 >
                   <Heart className="w-7 h-7 text-red-500 fill-red-500" />
                 </div>
@@ -262,8 +253,7 @@ const TeacherDashboard: React.FC = () => {
                     Hearts
                   </p>
                   <h3
-                    className="text-2xl font-black"
-                    style={{ color: "var(--color-navy)" }}
+                    className="text-2xl font-black text-navy"
                   >
                     {hearts}/{maxHearts}
                   </h3>
@@ -273,18 +263,12 @@ const TeacherDashboard: React.FC = () => {
                 {[...Array(maxHearts)].map((_, i) => (
                   <Heart
                     key={i}
-                    className={`w-6 h-6 transition-transform group-hover:scale-110`}
-                    style={{
-                      color:
-                        i < hearts
-                          ? "#ef4444"
-                          : "#e2e8f0",
-                      fill:
-                        i < hearts
-                          ? "#ef4444"
-                          : "#e2e8f0",
-                      transitionDelay: `${i * 25}ms`,
-                    }}
+                    className={`w-6 h-6 transition-transform group-hover:scale-110 ${
+                      i < hearts
+                        ? "text-red-500 fill-red-500"
+                        : "text-slate-200 fill-slate-200"
+                    }`}
+                    style={{ transitionDelay: `${i * 25}ms` }}
                   />
                 ))}
               </div>
@@ -303,19 +287,14 @@ const TeacherDashboard: React.FC = () => {
           {/* Performance Card */}
           <div className="xl:col-span-6 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
             <div
-              className="absolute -top-10 -right-8 w-36 h-36 rounded-full opacity-10 pointer-events-none"
-              style={{ background: "var(--color-blue)", filter: "blur(28px)" }}
+              className="absolute -top-10 -right-8 w-36 h-36 rounded-full bg-blue blur-[28px] opacity-10 pointer-events-none"
             />
             <div className="flex items-start justify-between mb-5 relative z-10">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(33,158,188,0.1)" }}
+                  className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center"
                 >
-                  <TrendingUp
-                    className="w-6 h-6 text-blue"
-                    style={{ color: "var(--color-blue)" }}
-                  />
+                  <TrendingUp className="w-6 h-6 text-blue" />
                 </div>
                 <div>
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">
@@ -331,8 +310,7 @@ const TeacherDashboard: React.FC = () => {
                   Feedback
                 </p>
                 <p
-                  className="text-2xl font-black leading-none"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-2xl font-black leading-none text-navy"
                 >
                   {totalFeedback}
                 </p>
@@ -378,8 +356,7 @@ const TeacherDashboard: React.FC = () => {
                     <Icon className="w-5 h-5" style={{ color }} />
                   </div>
                   <p
-                    className="text-3xl font-black leading-none"
-                    style={{ color: "var(--color-navy)" }}
+                    className="text-3xl font-black leading-none text-navy"
                   >
                     {value}
                   </p>
@@ -397,20 +374,15 @@ const TeacherDashboard: React.FC = () => {
                     Likes reçus
                   </p>
                   <p
-                    className="text-3xl font-black mt-1"
-                    style={{ color: "var(--color-blue)" }}
+                    className="text-3xl font-black mt-1 text-blue"
                   >
                     {stats?.performance.thumbsUp ?? 0}
                   </p>
                 </div>
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(33,158,188,0.12)" }}
+                  className="w-12 h-12 rounded-2xl bg-blue/12 flex items-center justify-center"
                 >
-                  <ThumbsUp
-                    className="w-6 h-6"
-                    style={{ color: "var(--color-blue)" }}
-                  />
+                  <ThumbsUp className="w-6 h-6 text-blue" />
                 </div>
               </div>
 
@@ -440,7 +412,6 @@ const TeacherDashboard: React.FC = () => {
                 </p>
                 <p
                   className="text-sm font-black text-blue"
-                  style={{ color: "var(--color-blue)" }}
                 >
                   {totalFeedback > 0
                     ? `${positiveRatio}%`
@@ -452,44 +423,33 @@ const TeacherDashboard: React.FC = () => {
           {/* Revenus  */}
           <div className="xl:col-span-3 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
             <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
-              style={{ background: "var(--color-gold)", filter: "blur(30px)" }}
+              className="absolute top-0 right-0 w-32 h-32 rounded-full bg-gold blur-[30px] opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
             />
             <div className="absolute top-2 right-2 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
               <DollarSign
-                className="w-24 h-24"
-                style={{ color: "var(--color-gold)" }}
+                className="w-24 h-24 text-gold"
               />
             </div>
 
             <div className="flex flex-col justify-between gap-6 relative z-10 h-full">
               <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(239,191,4,0.12)" }}
+                className="w-14 h-14 rounded-2xl bg-gold/12 flex items-center justify-center"
               >
-                <DollarSign
-                  className="w-7 h-7"
-                  style={{ color: "var(--color-gold)" }}
-                />
+                <DollarSign className="w-7 h-7 text-gold" />
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                   Revenus
                 </p>
                 <h3
-                  className="text-2xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-2xl font-black text-navy"
                 >
                   {stats?.earnings.total ?? 0}{" "}
                   {stats?.earnings.currency ?? "Ar"}
                 </h3>
                 <span
-                  className="text-[10px] font-bold px-2.5 py-1 rounded-full inline-block mt-1"
-                  style={{
-                    background: "rgba(239,191,4,0.1)",
-                    color: "var(--color-gold)",
-                  }}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-full inline-block mt-1 bg-gold/10 text-gold"
                 >
                   {stats?.earnings.ratePerClass ?? 5000}{" "}
                   {stats?.earnings.currency ?? "Ar"} per class
@@ -516,8 +476,7 @@ const TeacherDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2
-                  className="text-xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-xl font-black text-navy"
                 >
                   Competence mesure
                 </h2>
@@ -526,13 +485,9 @@ const TeacherDashboard: React.FC = () => {
                 </p>
               </div>
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(33,158,188,0.1)" }}
+                className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center"
               >
-                <Sparkles
-                  className="w-5 h-5"
-                  style={{ color: "var(--color-blue)" }}
-                />
+                <Sparkles className="w-5 h-5 text-blue" />
               </div>
             </div>
 
@@ -543,8 +498,7 @@ const TeacherDashboard: React.FC = () => {
                   Niveau actuel
                 </p>
                 <p
-                  className="text-xl font-black capitalize mt-1"
-                  style={{ color: "var(--color-blue)" }}
+                  className="text-xl font-black capitalize mt-1 text-blue"
                 >
                   {competenceLabel[stats?.currentCompetence || "average"]}
                 </p>
@@ -661,8 +615,7 @@ const TeacherDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2
-                  className="text-xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-xl font-black text-navy"
                 >
                   Cours (prochains 48h)
                 </h2>
@@ -671,12 +624,7 @@ const TeacherDashboard: React.FC = () => {
                 </p>
               </div>
               <span
-                className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider"
-                style={{
-                  background: "rgba(33,158,188,0.1)",
-                  color: "var(--color-blue)",
-                  border: "1px solid rgba(33,158,188,0.2)",
-                }}
+                className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue/10 text-blue border border-blue/20"
               >
                 {upcoming.length} Cours
               </span>
@@ -748,16 +696,9 @@ const TeacherDashboard: React.FC = () => {
               ) : (
                 <div className="py-12 text-center">
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                    style={{
-                      background: "rgba(33,158,188,0.06)",
-                      border: "2px dashed rgba(33,158,188,0.2)",
-                    }}
+                    className="w-16 h-16 rounded-2xl bg-blue/[0.06] border-2 border-dashed border-blue/20 flex items-center justify-center mx-auto mb-4"
                   >
-                    <Calendar
-                      className="w-8 h-8"
-                      style={{ color: "rgba(33,158,188,0.3)" }}
-                    />
+                    <Calendar className="w-8 h-8 text-blue/30" />
                   </div>
                   <p className="text-slate-400 font-bold italic">
                     Aucun cours prévu pour les 2 prochains jours.
