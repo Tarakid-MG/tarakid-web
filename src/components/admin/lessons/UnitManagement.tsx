@@ -6,7 +6,6 @@ import {
   type KidLevel,
   labelCls,
   inputCls,
-  navy,
   blue,
 } from "./LessonTypes";
 import { Message } from "./Shared";
@@ -57,7 +56,6 @@ export const UnitManagement: React.FC<UnitManagementProps> = ({
             onChange={(e) =>
               setUnitForm({ ...unitForm, title: e.target.value })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         </div>
         <div>
@@ -72,7 +70,6 @@ export const UnitManagement: React.FC<UnitManagementProps> = ({
             onChange={(e) =>
               setUnitForm({ ...unitForm, order: Number(e.target.value) })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         </div>
       </div>
@@ -81,11 +78,8 @@ export const UnitManagement: React.FC<UnitManagementProps> = ({
         <button
           type="submit"
           disabled={unitCreating}
-          className="flex-1 py-4 rounded-2xl text-white font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-          style={{
-            background: navy,
-            boxShadow: "0 4px 16px rgba(32,42,68,0.2)",
-          }}
+          className="flex-1 py-4 rounded-2xl bg-navy text-white font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+          style={{ boxShadow: "0 4px 16px rgba(32,42,68,0.2)" }}
         >
           {editUnitId ? (
             <Edit2 className="w-4 h-4" />
@@ -131,7 +125,7 @@ export const UnitManagement: React.FC<UnitManagementProps> = ({
                     {u.order}
                   </div>
                   <div>
-                    <p className="font-bold text-sm" style={{ color: navy }}>
+                    <p className="font-bold text-sm text-navy">
                       {u.title}
                     </p>
                     <p className="text-[10px] text-slate-400 font-bold">

@@ -5,10 +5,6 @@ import {
 
 export type Tab = "create" | "list";
 
-export const navy = "var(--color-navy)";
-export const blue = "var(--color-blue)";
-export const deepBlue = "var(--color-deepBlue)";
-
 export const labelCls =
   "block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-1.5";
 export const inputCls =

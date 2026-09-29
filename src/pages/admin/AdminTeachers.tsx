@@ -8,8 +8,6 @@ import {
   type Tab,
   type User,
   type CreateTeacherDto,
-  navy,
-  blue,
 } from "../../components/admin/teachers/TeacherTypes";
 import { TeacherForm } from "../../components/admin/teachers/TeacherForm";
 import { TeacherList } from "../../components/admin/teachers/TeacherList";
@@ -152,7 +150,7 @@ const AdminTeachers: React.FC = () => {
     <AdminLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-black" style={{ color: navy }}>
+          <h1 className="text-2xl font-black text-navy">
             Professeurs
           </h1>
           <p className="text-sm font-medium mt-1 text-slate-400">
@@ -170,15 +168,11 @@ const AdminTeachers: React.FC = () => {
                 onClick={() => setTab(id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                   active
-                    ? "bg-white shadow-sm"
+                    ? "bg-white text-navy shadow-sm"
                     : "text-slate-400 hover:text-navy"
                 }`}
-                style={active ? { color: navy } : {}}
               >
-                <Icon
-                  className="w-4 h-4"
-                  style={active ? { color: blue } : {}}
-                />
+                <Icon className={`w-4 h-4 ${active ? "text-blue" : ""}`} />
                 {label}
               </button>
             );

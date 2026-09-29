@@ -16,7 +16,6 @@ import {
   LEVELS,
   LEVEL_COLORS,
   LEVEL_BG,
-  navy,
   blue,
   teal,
 } from "../../components/admin/lessons/LessonTypes";
@@ -276,9 +275,9 @@ const AdminLessons: React.FC = () => {
         {/* ── Page Header ────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
           <div>
-            <h1 className="text-3xl font-black" style={{ color: navy }}>
+            <h1 className="text-3xl font-black text-navy">
               Contenu{" "}
-              <span className="italic" style={{ color: blue }}>
+              <span className="italic text-blue">
                 Pédagogique
               </span>
             </h1>
@@ -328,16 +327,11 @@ const AdminLessons: React.FC = () => {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   active
-                    ? {
-                        background: navy,
-                        color: "white",
-                        boxShadow: "0 4px 14px rgba(32,42,68,0.2)",
-                      }
-                    : { color: "#94a3b8", background: "transparent" }
-                }
+                    ? "bg-navy text-white shadow-[0_4px_14px_rgba(32,42,68,0.2)]"
+                    : "text-slate-400 bg-transparent"
+                }`}
               >
                 <Icon className="w-4 h-4" style={active ? {} : { color }} />
                 {label}
@@ -372,7 +366,7 @@ const AdminLessons: React.FC = () => {
                     </span>
                   </div>
                   <div>
-                    <h2 className="text-sm font-black" style={{ color: navy }}>
+                    <h2 className="text-sm font-black text-navy">
                       {tab === "create" &&
                         (editLessonId ? "Modifier la leçon" : `Nouvelle leçon`)}
                       {tab === "lessons" && "Liste des Leçons"}

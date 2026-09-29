@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MessageSquareText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { feedbackService } from "../../../services/feedback.service";
-import { type Unit, type KidLevel, navy, blue } from "./LessonTypes";
+import { type Unit, type KidLevel, blue } from "./LessonTypes";
 
 interface AdminSidebarProps {
   units: Unit[];
@@ -29,10 +29,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   return (
     <div className="lg:col-span-4 space-y-5">
       {/* Stats card */}
-      <div
-        className="rounded-3xl p-6 overflow-hidden relative"
-        style={{ background: navy }}
-      >
+      <div className="rounded-3xl p-6 overflow-hidden relative bg-navy">
         <div
           className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 pointer-events-none"
           style={{ background: lvlColor, filter: "blur(30px)" }}
@@ -97,7 +94,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <MessageSquareText className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-black" style={{ color: navy }}>
+            <p className="text-sm font-black text-navy">
               Feedback
             </p>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -124,7 +121,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               text: (
                 <>
                   Sélectionnez d'abord un{" "}
-                  <strong style={{ color: navy }}>niveau</strong> en haut à
+                  <strong className="text-navy">niveau</strong> en haut à
                   droite.
                 </>
               ),
@@ -134,7 +131,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               text: (
                 <>
                   Cliquez sur le carré pointillé pour{" "}
-                  <strong style={{ color: navy }}>uploader une preview</strong>{" "}
+                  <strong className="text-navy">uploader une preview</strong>{" "}
                   vers MinIO.
                 </>
               ),

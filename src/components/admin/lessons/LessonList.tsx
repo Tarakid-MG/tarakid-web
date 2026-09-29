@@ -7,7 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { type Unit, type Lesson, navy, blue } from "./LessonTypes";
+import { type Unit, type Lesson, blue } from "./LessonTypes";
 
 interface LessonListProps {
   units: Unit[];
@@ -54,8 +54,7 @@ export const LessonList: React.FC<LessonListProps> = ({
                 )}
               </div>
               <h3
-                className="font-black text-sm uppercase tracking-wide group-hover/unit:opacity-70 transition-opacity"
-                style={{ color: navy }}
+                className="font-black text-sm uppercase tracking-wide text-navy group-hover/unit:opacity-70 transition-opacity"
               >
                 {u.title}
               </h3>
@@ -114,8 +113,7 @@ export const LessonList: React.FC<LessonListProps> = ({
                           </div>
                           <div className="min-w-0">
                             <p
-                              className="font-bold text-sm truncate"
-                              style={{ color: navy }}
+                              className="font-bold text-sm truncate text-navy"
                             >
                               {l.title}
                             </p>

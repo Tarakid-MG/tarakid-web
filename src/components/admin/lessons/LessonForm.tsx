@@ -6,8 +6,6 @@ import {
   LESSON_TYPES,
   labelCls,
   inputCls,
-  navy,
-  blue,
 } from "./LessonTypes";
 import { Message } from "./Shared";
 
@@ -63,7 +61,6 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             onChange={(e) =>
               setLessonForm({ ...lessonForm, unitId: e.target.value })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           >
             {units.map((u) => (
               <option key={u.id} value={u.id}>
@@ -99,7 +96,6 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             onChange={(e) =>
               setLessonForm({ ...lessonForm, title: e.target.value })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         </div>
         <div>
@@ -114,7 +110,6 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             onChange={(e) =>
               setLessonForm({ ...lessonForm, order: Number(e.target.value) })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         </div>
       </div>
@@ -245,7 +240,6 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             onChange={(e) =>
               setLessonForm({ ...lessonForm, content: e.target.value })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         ) : (
           <textarea
@@ -256,7 +250,6 @@ export const LessonForm: React.FC<LessonFormProps> = ({
             onChange={(e) =>
               setLessonForm({ ...lessonForm, content: e.target.value })
             }
-            style={{ borderColor: "#e2e8f0", color: navy }}
           />
         )}
       </div>
@@ -273,18 +266,14 @@ export const LessonForm: React.FC<LessonFormProps> = ({
           onChange={(e) =>
             setLessonForm({ ...lessonForm, description: e.target.value })
           }
-          style={{ borderColor: "#e2e8f0", color: navy }}
         />
       </div>
 
       <button
         type="submit"
         disabled={creating || uploadingThumb || units.length === 0}
-        className="w-full py-4 rounded-2xl text-white font-black text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-        style={{
-          background: blue,
-          boxShadow: "0 6px 20px rgba(33,158,188,0.25)",
-        }}
+        className="w-full py-4 rounded-2xl bg-blue text-white font-black text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+        style={{ boxShadow: "0 6px 20px rgba(33,158,188,0.25)" }}
       >
         {creating || uploadingThumb ? (
           <>

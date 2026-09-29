@@ -35,7 +35,6 @@ export const LEVEL_BG: Record<string, string> = {
   L5: "rgba(239,191,4,0.12)",
 };
 
-export const navy = "var(--color-navy)";
 export const blue = "var(--color-blue)";
 export const teal = "var(--color-teal)";
 export const gold = "var(--color-gold)";
@@ -43,7 +42,7 @@ export const gold = "var(--color-gold)";
 export const labelCls =
   "block text-[9px] font-black uppercase tracking-[0.18em] mb-1.5";
 export const inputCls =
-  "w-full border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors placeholder-slate-300";
+  "w-full border border-slate-200 text-navy rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-colors placeholder-slate-300";
 
 export type {
   Unit,
