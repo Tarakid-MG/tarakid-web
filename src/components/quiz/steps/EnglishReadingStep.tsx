@@ -30,7 +30,7 @@ const EnglishReadingStep: React.FC<QuizStepProps> = ({
           },
           {
             val: "NONE",
-            label: "Auncun mot pour le moment ✨",
+            label: "Aucun mot pour le moment ✨",
             sub: "C'est le moment de commencer !",
           },
         ].map((opt) => (

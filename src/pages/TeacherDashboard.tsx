@@ -12,7 +12,6 @@ import {
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
-  Star,
 } from "lucide-react";
 import {
   PieChart,
@@ -22,6 +21,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 import { TeacherLayout } from "../components/layout/TeacherLayout";
 import { bookingService, type TeacherStats } from "../services/booking.service";
 import { type Booking } from "../types/auth";
@@ -30,8 +30,25 @@ import { useAuth } from "../context/AuthContextDefinition";
 // ── Palette identique à l'original, adaptée au thème ──────────────────────
 const COLORS = ["#f87171", "#fb923c", "#fcd34d", "#4ade80", "#6366f1"];
 
+const competenceLabel: Record<string, string> = {
+  poor: "Poor",
+  belowAverage: "Below Average",
+  average: "Average",
+  good: "Good",
+  competent: "Competent",
+};
+
+function formatSessionDate(date: string) {
+  return new Date(date).toLocaleDateString("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
 const TeacherDashboard: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<TeacherStats | null>(null);
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +62,6 @@ const TeacherDashboard: React.FC = () => {
           bookingService.getTeacherStats(),
           bookingService.getTeacherUpcoming(),
         ]);
-        console.log(statsData);
         setStats(statsData);
         setUpcoming(upcomingData);
       } catch (error) {
@@ -115,18 +131,24 @@ const TeacherDashboard: React.FC = () => {
     : 2;
   const needleValue =
     (currentLevelIndex === -1 ? 2 : currentLevelIndex + 0.5) * 20;
+  const competenceScore = stats
+    ? Math.max(...Object.values(stats.competences))
+    : 0;
+  const hearts = stats?.hearts ?? Math.round((stats?.commitmentScore ?? 0) / 2);
+  const maxHearts = stats?.maxHearts ?? 5;
+  const totalFeedback =
+    (stats?.performance.thumbsUp ?? 0) + (stats?.performance.thumbsDown ?? 0);
+  const positiveRatio =
+    totalFeedback > 0
+      ? Math.round(((stats?.performance.thumbsUp ?? 0) / totalFeedback) * 100)
+      : null;
+  const finishedCourses = stats?.performance.finishedCourses ?? 0;
 
   if (loading) {
     return (
       <TeacherLayout>
         <div className="p-8 flex items-center justify-center h-[80vh]">
-          <div
-            className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
-            style={{
-              borderColor: "var(--color-blue)",
-              borderTopColor: "transparent",
-            }}
-          />
+          <div className="w-12 h-12 rounded-full border-2 border-blue border-t-transparent animate-spin" />
         </div>
       </TeacherLayout>
     );
@@ -134,251 +156,313 @@ const TeacherDashboard: React.FC = () => {
 
   return (
     <TeacherLayout>
-      <div className="p-8 space-y-8">
+      <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1
-              className="text-3xl font-black leading-tight"
-              style={{ color: "var(--color-navy)" }}
-            >
-              Bonjour,{" "}
-              <span className="italic" style={{ color: "var(--color-blue)" }}>
-                Chef {user?.firstName}
-              </span>{" "}
-              👋
-            </h1>
-            <p className="text-slate-500 font-medium mt-1">
-              Voici votre aperçu pédagogique pour aujourd'hui.
-            </p>
-          </div>
-
-          {/* Date pill */}
-          <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-slate-100">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(33,158,188,0.1)" }}
-            >
-              <Calendar
-                className="w-5 h-5"
-                style={{ color: "var(--color-blue)" }}
-              />
-            </div>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                Date
-              </p>
-              <p
-                className="text-sm font-bold"
-                style={{ color: "var(--color-navy)" }}
+        <div className="relative overflow-hidden rounded-4xl bg-white border border-slate-100 shadow-sm p-6 md:p-8">
+          <div className="absolute right-0 top-0 h-full w-1/3 bg-blue/5 pointer-events-none" />
+          <div className="absolute -right-14 -top-14 h-48 w-48 rounded-full bg-gold/15 pointer-events-none" />
+          <div className="relative flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue/10 border border-blue/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-blue mb-4">
+                <Sparkles className="w-3.5 h-3.5" />
+                Tableau professeur
+              </div>
+              <h1
+                className="text-3xl md:text-4xl font-black leading-tight text-navy"
               >
-                {new Date().toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                })}
+                Bonjour,{" "}
+                <span className="text-blue">
+                  {user?.firstName || "Professeur"}
+                </span>
+              </h1>
+              <p className="text-slate-500 font-medium mt-2">
+                Suivez vos prochains cours, vos retours parents et votre rythme
+                pédagogique en un coup d'oeil.
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                {
+                  label: "Aujourd'hui",
+                  value: new Date().toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                  }),
+                  icon: Calendar,
+                  color: "var(--color-blue)",
+                  bg: "rgba(33,158,188,0.1)",
+                },
+                {
+                  label: "48h",
+                  value: `${upcoming.length} cours`,
+                  icon: Clock,
+                  color: "var(--color-teal)",
+                  bg: "rgba(0,128,128,0.1)",
+                },
+                {
+                  label: "Feedback",
+                  value: String(totalFeedback),
+                  icon: ThumbsUp,
+                  color: "var(--color-gold)",
+                  bg: "rgba(239,191,4,0.13)",
+                },
+              ].map(({ label, value, icon: Icon, color, bg }) => (
+                <div
+                  key={label}
+                  className="bg-white/90 rounded-2xl border border-slate-100 px-4 py-3 shadow-sm min-w-[132px]"
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+                    style={{ background: bg }}
+                  >
+                    <Icon className="w-[18px] h-[18px]" style={{ color }} />
+                  </div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    {label}
+                  </p>
+                  <p className="text-sm font-black text-navy mt-0.5">
+                    {value}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* ── Top Stats ───────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Commitment Mesure */}
-          <div className="bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
+          <div className="xl:col-span-3 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
             <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
-              style={{ background: "#ef4444", filter: "blur(30px)" }}
+              className="absolute top-0 right-0 w-32 h-32 rounded-full bg-red-500 blur-[30px] opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
             />
             <div className="absolute top-2 right-2 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
               <Heart className="w-24 h-24 fill-red-500" />
             </div>
 
-            <div className="flex flex-col gap-4 relative z-10">
+            <div className="flex flex-col gap-5 relative z-10">
               <div className="flex items-center gap-4">
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(239,68,68,0.1)" }}
+                  className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center"
                 >
                   <Heart className="w-7 h-7 text-red-500 fill-red-500" />
                 </div>
                 <div>
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                    Commitment Mesure
+                    Hearts
                   </p>
                   <h3
-                    className="text-2xl font-black"
-                    style={{ color: "var(--color-navy)" }}
+                    className="text-2xl font-black text-navy"
                   >
-                    {stats?.commitmentScore}/10
+                    {hearts}/{maxHearts}
                   </h3>
                 </div>
               </div>
               <div className="flex gap-1.5">
-                {[...Array(10)].map((_, i) => (
+                {[...Array(maxHearts)].map((_, i) => (
                   <Heart
                     key={i}
-                    className={`w-4 h-4 transition-transform group-hover:scale-110`}
-                    style={{
-                      color:
-                        i < (stats?.commitmentScore || 0)
-                          ? "#ef4444"
-                          : "#e2e8f0",
-                      fill:
-                        i < (stats?.commitmentScore || 0)
-                          ? "#ef4444"
-                          : "#e2e8f0",
-                      transitionDelay: `${i * 25}ms`,
-                    }}
+                    className={`w-6 h-6 transition-transform group-hover:scale-110 ${
+                      i < hearts
+                        ? "text-red-500 fill-red-500"
+                        : "text-slate-200 fill-slate-200"
+                    }`}
+                    style={{ transitionDelay: `${i * 25}ms` }}
                   />
                 ))}
               </div>
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full bg-red-500 rounded-full transition-all duration-700"
+                  style={{ width: `${(hearts / maxHearts) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs font-bold text-slate-400">
+                Les coeurs reflètent votre fiabilité récente.
+              </p>
             </div>
           </div>
 
           {/* Performance Card */}
-          <div className="bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="xl:col-span-6 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
+            <div
+              className="absolute -top-10 -right-8 w-36 h-36 rounded-full bg-blue blur-[28px] opacity-10 pointer-events-none"
+            />
+            <div className="flex items-start justify-between mb-5 relative z-10">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(33,158,188,0.1)" }}
+                  className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center"
                 >
-                  <TrendingUp
-                    className="w-5 h-5 text-blue"
-                    style={{ color: "var(--color-blue)" }}
-                  />
+                  <TrendingUp className="w-6 h-6 text-blue" />
                 </div>
-                <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  Performance
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+                    Performance
+                  </p>
+                  <p className="text-[11px] font-bold text-slate-400 mt-1">
+                    Données réelles des cours et feedbacks
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  Feedback
+                </p>
+                <p
+                  className="text-2xl font-black leading-none text-navy"
+                >
+                  {totalFeedback}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 relative z-10">
-              {/* Finished & Canceled */}
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-bold text-slate-600">
-                  Terminés: {stats?.performance.finishedCourses ?? 0}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-rose-500" />
-                <span className="text-xs font-bold text-slate-600">
-                  Annulés: {stats?.performance.canceledCourses ?? 0}
-                </span>
+            <div className="grid grid-cols-3 gap-3 relative z-10">
+              {[
+                {
+                  label: "Terminés",
+                  value: stats?.performance.finishedCourses ?? 0,
+                  icon: CheckCircle,
+                  color: "var(--color-teal)",
+                  bg: "rgba(0,128,128,0.12)",
+                  border: "rgba(0,128,128,0.18)",
+                },
+                {
+                  label: "Annulés",
+                  value: stats?.performance.canceledCourses ?? 0,
+                  icon: XCircle,
+                  color: "var(--color-navy)",
+                  bg: "rgba(2,48,71,0.08)",
+                  border: "rgba(2,48,71,0.14)",
+                },
+                {
+                  label: "Retards",
+                  value: stats?.performance.lateCourses ?? 0,
+                  icon: AlertCircle,
+                  color: "var(--color-gold)",
+                  bg: "rgba(255,183,3,0.16)",
+                  border: "rgba(255,183,3,0.24)",
+                },
+              ].map(({ label, value, icon: Icon, color, bg, border }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+                  style={{ borderColor: border }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+                    style={{ background: bg }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </div>
+                  <p
+                    className="text-3xl font-black leading-none text-navy"
+                  >
+                    {value}
+                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 relative z-10">
+              <div className="rounded-2xl border border-blue/15 bg-blue/5 p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Likes reçus
+                  </p>
+                  <p
+                    className="text-3xl font-black mt-1 text-blue"
+                  >
+                    {stats?.performance.thumbsUp ?? 0}
+                  </p>
+                </div>
+                <div
+                  className="w-12 h-12 rounded-2xl bg-blue/12 flex items-center justify-center"
+                >
+                  <ThumbsUp className="w-6 h-6 text-blue" />
+                </div>
               </div>
 
-              {/* Late & Thumbs */}
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-xs font-bold text-slate-600">
-                  Retards: {stats?.performance.lateCourses ?? 0}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <ThumbsUp
-                    className="w-3.5 h-3.5 text-blue"
-                    style={{ color: "var(--color-blue)" }}
-                  />
-                  <span className="text-[10px] font-black">
-                    {stats?.performance.thumbsUp ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ThumbsDown className="w-3.5 h-3.5 text-slate-300" />
-                  <span className="text-[10px] font-black">
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Dislikes reçus
+                  </p>
+                  <p className="text-3xl font-black mt-1 text-rose-500">
                     {stats?.performance.thumbsDown ?? 0}
-                  </span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center">
+                  <ThumbsDown className="w-6 h-6 text-rose-500" />
                 </div>
               </div>
             </div>
 
-            {/* Star Distribution Summary */}
-            <div className="mt-4 pt-4 border-t border-slate-50 relative z-10 flex items-center justify-between">
-              <div className="flex gap-1">
-                {[5, 4, 3, 2, 1].map((star) => (
-                  <div
-                    key={star}
-                    className="flex flex-col items-center group/star"
-                  >
-                    <div className="flex items-center gap-0.5">
-                      <span className="text-[8px] font-black text-slate-400">
-                        {star}
-                      </span>
-                      <Star
-                        className={`w-2.5 h-2.5 ${star === 5 ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}`}
-                      />
-                    </div>
-                    <span className="text-[9px] font-bold text-slate-700 mt-0.5">
-                      {stats?.performance.stars[
-                        star as keyof typeof stats.performance.stars
-                      ] ?? 0}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="text-right">
-                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">
-                  Total Avis
+            <div className="mt-4 pt-4 border-t border-slate-100 relative z-10 flex items-center justify-between gap-4">
+              <p className="text-xs font-bold text-slate-400">
+                Calculé depuis les réservations assignées au professeur et les
+                feedbacks post-leçon.
+              </p>
+              <div className="shrink-0 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2 text-right">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  Ratio positif
                 </p>
                 <p
                   className="text-sm font-black text-blue"
-                  style={{ color: "var(--color-blue)" }}
                 >
-                  {Object.values(stats?.performance.stars ?? {}).reduce(
-                    (a, b) => a + b,
-                    0,
-                  )}
+                  {totalFeedback > 0
+                    ? `${positiveRatio}%`
+                    : "—"}
                 </p>
               </div>
             </div>
           </div>
           {/* Revenus  */}
-          <div className="bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
+          <div className="xl:col-span-3 bg-white rounded-3xl p-6 relative overflow-hidden shadow-sm border border-slate-100 group">
             <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
-              style={{ background: "var(--color-gold)", filter: "blur(30px)" }}
+              className="absolute top-0 right-0 w-32 h-32 rounded-full bg-gold blur-[30px] opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"
             />
             <div className="absolute top-2 right-2 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
               <DollarSign
-                className="w-24 h-24"
-                style={{ color: "var(--color-gold)" }}
+                className="w-24 h-24 text-gold"
               />
             </div>
 
-            <div className="flex items-center gap-4 relative z-10 h-full">
+            <div className="flex flex-col justify-between gap-6 relative z-10 h-full">
+              <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(239,191,4,0.12)" }}
+                className="w-14 h-14 rounded-2xl bg-gold/12 flex items-center justify-center"
               >
-                <DollarSign
-                  className="w-7 h-7"
-                  style={{ color: "var(--color-gold)" }}
-                />
+                <DollarSign className="w-7 h-7 text-gold" />
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                   Revenus
                 </p>
                 <h3
-                  className="text-2xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-2xl font-black text-navy"
                 >
                   {stats?.earnings.total ?? 0}{" "}
                   {stats?.earnings.currency ?? "Ar"}
                 </h3>
                 <span
-                  className="text-[10px] font-bold px-2.5 py-1 rounded-full inline-block mt-1"
-                  style={{
-                    background: "rgba(239,191,4,0.1)",
-                    color: "var(--color-gold)",
-                  }}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-full inline-block mt-1 bg-gold/10 text-gold"
                 >
                   {stats?.earnings.ratePerClass ?? 5000}{" "}
                   {stats?.earnings.currency ?? "Ar"} per class
                 </span>
+              </div>
+              </div>
+              <div className="rounded-2xl bg-gold/10 border border-gold/20 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Cours payés
+                </p>
+                <p className="text-2xl font-black text-navy mt-1">
+                  {finishedCourses}
+                </p>
               </div>
             </div>
           </div>
@@ -387,43 +471,46 @@ const TeacherDashboard: React.FC = () => {
         {/* ── Bottom Row ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Competence Mesure — jauge originale conservée (cx=200, cy=200, iR=80, oR=120) */}
-          <div className="lg:col-span-12 xl:col-span-5 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+          <div className="lg:col-span-12 xl:col-span-5 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+            <div className="absolute -left-12 -bottom-12 h-48 w-48 rounded-full bg-blue/5 pointer-events-none" />
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2
-                  className="text-xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-xl font-black text-navy"
                 >
-                  Competences Mesure
+                  Competence mesure
                 </h2>
                 <p className="text-xs font-bold text-slate-400 mt-1">
-                  Analyse de vos retours pédagogiques
+                  Score réel calculé depuis cours et feedbacks
                 </p>
               </div>
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: "rgba(33,158,188,0.1)" }}
+                className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center"
               >
-                <Sparkles
-                  className="w-5 h-5"
-                  style={{ color: "var(--color-blue)" }}
-                />
+                <Sparkles className="w-5 h-5 text-blue" />
               </div>
             </div>
 
             {/* Current level label moved to top */}
-            <div className="text-center mb-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                Niveau Actuel
-              </p>
-              <p
-                className="text-2xl font-black capitalize"
-                style={{ color: "var(--color-blue)" }}
-              >
-                {stats?.currentCompetence === "belowAverage"
-                  ? "Below Average"
-                  : stats?.currentCompetence || "average"}
-              </p>
+            <div className="grid grid-cols-2 gap-3 mb-5 relative z-10">
+              <div className="rounded-2xl bg-blue/5 border border-blue/10 p-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
+                  Niveau actuel
+                </p>
+                <p
+                  className="text-xl font-black capitalize mt-1 text-blue"
+                >
+                  {competenceLabel[stats?.currentCompetence || "average"]}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
+                  Score
+                </p>
+                <p className="text-xl font-black text-navy mt-1">
+                  {competenceScore}/100
+                </p>
+              </div>
             </div>
 
             {/* Gauge container avec flèche */}
@@ -496,15 +583,39 @@ const TeacherDashboard: React.FC = () => {
                 </svg>
               </div>
             </div>
+
+            <div className="relative z-10 mt-2 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  Terminés
+                </p>
+                <p className="font-black text-emerald-600">
+                  {finishedCourses}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-blue/5 border border-blue/10 px-3 py-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  Feedback
+                </p>
+                <p className="font-black text-blue">{totalFeedback}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  Ratio
+                </p>
+                <p className="font-black text-navy">
+                  {positiveRatio !== null ? `${positiveRatio}%` : "—"}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Upcoming courses — données originales conservées */}
-          <div className="lg:col-span-12 xl:col-span-7 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+          <div className="lg:col-span-12 xl:col-span-7 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2
-                  className="text-xl font-black"
-                  style={{ color: "var(--color-navy)" }}
+                  className="text-xl font-black text-navy"
                 >
                   Cours (prochains 48h)
                 </h2>
@@ -513,12 +624,7 @@ const TeacherDashboard: React.FC = () => {
                 </p>
               </div>
               <span
-                className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider"
-                style={{
-                  background: "rgba(33,158,188,0.1)",
-                  color: "var(--color-blue)",
-                  border: "1px solid rgba(33,158,188,0.2)",
-                }}
+                className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue/10 text-blue border border-blue/20"
               >
                 {upcoming.length} Cours
               </span>
@@ -526,51 +632,38 @@ const TeacherDashboard: React.FC = () => {
 
             <div className="space-y-4">
               {upcoming.length > 0 ? (
-                upcoming.map((booking) => (
+                upcoming.map((booking, index) => (
                   <div
                     key={booking.id}
-                    className="group p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer"
-                    style={{ borderColor: "#f1f5f9", background: "#f8fafc" }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor =
-                        "rgba(33,158,188,0.25)";
-                      (e.currentTarget as HTMLElement).style.background =
-                        "rgba(33,158,188,0.04)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor =
-                        "#f1f5f9";
-                      (e.currentTarget as HTMLElement).style.background =
-                        "#f8fafc";
-                    }}
+                    className="group p-4 rounded-3xl border border-slate-100 bg-slate-50/80 hover:bg-blue/5 hover:border-blue/20 transition-all flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all"
-                        style={{
-                          background: "#f8fafc",
-                          borderColor: "#f1f5f9",
-                          color: "#94a3b8",
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.background =
-                            "white";
-                          (e.currentTarget as HTMLElement).style.color =
-                            "var(--color-blue)";
-                          (e.currentTarget as HTMLElement).style.borderColor =
-                            "rgba(33,158,188,0.2)";
-                        }}
-                      >
-                        <Clock className="w-5 h-5" />
+                      <div className="relative">
+                        <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-blue shadow-sm group-hover:scale-105 transition-transform">
+                          <Clock className="w-6 h-6" />
+                        </div>
+                        <span className="absolute -top-2 -right-2 h-6 min-w-6 px-1 rounded-lg bg-navy text-white text-[10px] font-black flex items-center justify-center border-2 border-white">
+                          {index + 1}
+                        </span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-blue bg-blue/10 border border-blue/15 rounded-lg px-2 py-1">
+                            {booking.type === "FREE_TRIAL" ? "Essai" : "Régulier"}
+                          </span>
+                          {booking.lesson?.title && (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-teal bg-teal/10 border border-teal/15 rounded-lg px-2 py-1">
+                              {booking.lesson.title}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-black text-slate-900">
                           Cours avec {booking.kid?.name || "un enfant"}
                         </h4>
                         <div className="flex items-center gap-3 mt-1 text-xs font-bold text-slate-400 uppercase tracking-widest leading-none">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-3 h-3" />
-                            {new Date(booking.sessionDate).toLocaleDateString()}
+                            {formatSessionDate(booking.sessionDate)}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
@@ -580,41 +673,32 @@ const TeacherDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <button
-                      className="w-10 h-10 flex items-center justify-center rounded-xl transition-all"
-                      style={{
-                        background: "rgba(33,158,188,0.08)",
-                        color: "var(--color-blue)",
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.background =
-                          "var(--color-blue)";
-                        (e.currentTarget as HTMLElement).style.color = "#fff";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background =
-                          "rgba(33,158,188,0.08)";
-                        (e.currentTarget as HTMLElement).style.color =
-                          "var(--color-blue)";
-                      }}
-                    >
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
+                    <div className="hidden sm:flex items-center gap-3">
+                      <div className="rounded-2xl bg-white border border-slate-100 px-3 py-2 text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          Élève
+                        </p>
+                        <p className="text-xs font-black text-navy">
+                          {booking.kid?.level || "L0"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/teacher/sessions")}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-blue/10 text-blue group-hover:bg-blue group-hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30"
+                        aria-label="Voir les sessions professeur"
+                      >
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
                 <div className="py-12 text-center">
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                    style={{
-                      background: "rgba(33,158,188,0.06)",
-                      border: "2px dashed rgba(33,158,188,0.2)",
-                    }}
+                    className="w-16 h-16 rounded-2xl bg-blue/[0.06] border-2 border-dashed border-blue/20 flex items-center justify-center mx-auto mb-4"
                   >
-                    <Calendar
-                      className="w-8 h-8"
-                      style={{ color: "rgba(33,158,188,0.3)" }}
-                    />
+                    <Calendar className="w-8 h-8 text-blue/30" />
                   </div>
                   <p className="text-slate-400 font-bold italic">
                     Aucun cours prévu pour les 2 prochains jours.

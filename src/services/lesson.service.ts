@@ -1,6 +1,6 @@
 import api from "../api/client";
 
-export type LessonType = "genially" | "pdf";
+export type LessonType = "genially" | "pdf" | "video";
 
 export interface Lesson {
   id: string;
@@ -20,6 +20,17 @@ export interface Unit {
   lessons: Lesson[];
 }
 
+export interface KidLessonsResponse {
+  units: Unit[];
+  suggestedLessonId: string | null;
+}
+
+export interface RevisionAsset {
+  key: string;
+  name: string;
+  url: string;
+}
+
 class LessonService {
   async getUnits(level: string): Promise<Unit[]> {
     try {
@@ -31,13 +42,16 @@ class LessonService {
     }
   }
 
-  async getLessonsByKidAndLevel(kidId: string, level: string): Promise<Unit[]> {
+  async getLessonsByKidAndLevel(
+    kidId: string,
+    level: string,
+  ): Promise<KidLessonsResponse> {
     try {
       const response = await api.get(`/lessons/kid/${kidId}/level/${level}`);
       return response.data;
     } catch (error) {
       console.error("Failed to fetch units for kid", error);
-      return [];
+      return { units: [], suggestedLessonId: null };
     }
   }
 
@@ -50,6 +64,16 @@ class LessonService {
     } catch (error) {
       console.error("Failed to fetch lesson", error);
       return null;
+    }
+  }
+
+  async getRevisionAssets(bucketName: string): Promise<RevisionAsset[]> {
+    try {
+      const response = await api.get(`/lessons/revision-assets/${bucketName}`);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch revision assets", error);
+      return [];
     }
   }
 }

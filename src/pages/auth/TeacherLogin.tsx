@@ -203,6 +203,7 @@ const TeacherLogin: React.FC = () => {
                 <Input
                   name="email"
                   icon={Mail}
+                  iconClassName="text-white/30"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -221,6 +222,7 @@ const TeacherLogin: React.FC = () => {
                 <Input
                   name="password"
                   icon={Lock}
+                  iconClassName="text-white/30"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}

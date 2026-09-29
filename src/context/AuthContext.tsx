@@ -10,6 +10,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token"),
   );
+  const [loading, setLoading] = useState(!!token);
 
   useEffect(() => {
     if (token) {
@@ -20,8 +21,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [token]);
 
   const fetchProfile = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
+    setLoading(true);
     try {
       const response = await api.get<User>("/users/profile");
       setUser(response.data);
@@ -33,6 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Assuming 401/Invalid token means we should logout:
       setToken(null);
       setUser(null);
+    } finally {
+      setLoading(false);
     }
   }, [token]);
 
@@ -43,12 +50,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [token, fetchProfile]);
 
+  const setOnlineStatus = useCallback(
+    (isOnline: boolean, authToken?: string) => {
+      const activeToken = authToken || token;
+      if (!activeToken) return;
+
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3002";
+      if (
+        window.location.protocol === "https:" &&
+        apiUrl.startsWith("http://")
+      ) {
+        return;
+      }
+
+      fetch(`${apiUrl}/users/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${activeToken}`,
+        },
+        body: JSON.stringify({ isOnline }),
+        keepalive: true,
+      }).catch(console.error);
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    if (user && token) {
+      setOnlineStatus(true);
+
+      const handleUnload = () => {
+        setOnlineStatus(false);
+      };
+
+      window.addEventListener("beforeunload", handleUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleUnload);
+        setOnlineStatus(false);
+      };
+    }
+  }, [user, token, setOnlineStatus]);
+
   const login = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
   };
 
   const logout = () => {
+    if (token) {
+      setOnlineStatus(false, token);
+    }
     setToken(null);
     setUser(null);
     // localStorage and sessionStorage clearing handled by effects or explicit calls if needed beyond token
@@ -93,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         verifyPassword,
         isAuthenticated: !!token,
         updateUser,
+        loading,
       }}
     >
       {children}

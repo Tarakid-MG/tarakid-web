@@ -23,8 +23,9 @@ export const KidProfileSelector: React.FC<KidProfileSelectorProps> = ({
     navigate("/kid-dashboard");
   };
 
-  const getKidAvatar = (name: string) => {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+  const getKidAvatar = (kid: Kid) => {
+    if (kid.avatarUrl) return kid.avatarUrl;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${kid.name}`;
   };
 
   return (
@@ -50,7 +51,7 @@ export const KidProfileSelector: React.FC<KidProfileSelectorProps> = ({
                 <div className="absolute top-0 right-0 w-32 h-32 bg-yellow/20 rounded-full -mr-16 -mt-16"></div>
                 <div className="w-32 h-32 mx-auto mb-4 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white relative z-10">
                   <img
-                    src={getKidAvatar(kid.name)}
+                    src={getKidAvatar(kid)}
                     alt={kid.name}
                     className="w-full h-full object-cover"
                   />

@@ -1,10 +1,17 @@
 import api from "../api/client";
 
 export interface AgoraTokenResponse {
-  token: string;
-  appId: string;
-  channel: string;
-  uid: number;
+  rtc: {
+    token: string;
+    appId: string;
+    channel: string;
+    uid: number;
+  };
+  rtm: {
+    token: string;
+    appId: string;
+    uid: string;
+  };
 }
 
 export const agoraService = {

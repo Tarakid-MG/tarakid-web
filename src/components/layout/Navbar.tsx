@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "../ui/Logo";
+import { ConfirmModal } from "../ui/ConfirmModal";
 import { useAuth } from "../../context/AuthContextDefinition";
 import { useKidMode } from "../../hooks/useKidMode";
 import type { Kid } from "../../types/auth";
@@ -25,6 +26,8 @@ export const Navbar: React.FC = () => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [showKidModeConfirm, setShowKidModeConfirm] = useState(false);
+  const [pendingKid, setPendingKid] = useState<Kid | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -85,10 +88,24 @@ export const Navbar: React.FC = () => {
   };
 
   const handleKidSelect = (kid: Kid) => {
-    enterKidMode(kid);
+    setPendingKid(kid);
+    setShowKidModeConfirm(true);
+  };
+
+  const handleConfirmKidSelect = () => {
+    if (pendingKid) {
+      enterKidMode(pendingKid);
+    }
     setIsMenuOpen(false);
     setIsMobileNavOpen(false);
+    setShowKidModeConfirm(false);
+    setPendingKid(null);
     navigate("/dashboard");
+  };
+
+  const handleCancelKidSelect = () => {
+    setShowKidModeConfirm(false);
+    setPendingKid(null);
   };
 
   const closeAll = () => {
@@ -354,6 +371,21 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showKidModeConfirm}
+        title="Passer en mode enfant ?"
+        message={
+          pendingKid
+            ? `Le profil de ${pendingKid.name} va s'ouvrir avec une interface enfant.`
+            : "Le mode enfant va s'ouvrir."
+        }
+        confirmLabel="Continuer"
+        cancelLabel="Annuler"
+        variant="info"
+        onConfirm={handleConfirmKidSelect}
+        onCancel={handleCancelKidSelect}
+      />
     </header>
   );
 };

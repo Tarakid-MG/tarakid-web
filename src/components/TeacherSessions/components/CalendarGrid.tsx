@@ -1,10 +1,11 @@
 import React from "react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import { CheckSquare, Square, Lock, Check } from "lucide-react";
+import { CheckSquare, Square, Lock, Check, Video } from "lucide-react";
 import type { Session, SlotKey } from "../types";
-import { HOURS, MINUTES, isBlackout, toSlotKey } from "../utils";
+import { HOURS, MINUTES, isBlackout, toSlotKey, isJoinable } from "../utils";
 import type { TeacherAvailability } from "../../../services/booking.service";
+import { deriveBookingStatus } from "../../../utils/bookingStatus";
 
 interface CalendarGridProps {
   weekDays: Date[];
@@ -18,6 +19,7 @@ interface CalendarGridProps {
   handleSlotMouseEnter: (day: Date, hour: number, minute: string) => void;
   toggleSingleAvailability: (day: Date, hour: number, minute: string) => void;
   setSelectedSession: (session: Session) => void;
+  onEnterClassroom: (session: Session) => void;
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -32,7 +34,95 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   handleSlotMouseEnter,
   toggleSingleAvailability,
   setSelectedSession,
+  onEnterClassroom,
 }) => {
+  const getSessionMoment = (session: Session) => {
+    const start = new Date(`${session.sessionDate}T${session.startTime}`);
+    const end = new Date(`${session.sessionDate}T${session.endTime}`);
+    const now = new Date();
+    return {
+      isPast: end < now,
+      isCurrent: start <= now && end >= now,
+    };
+  };
+
+  const getStatusColors = (session: Session) => {
+    const { isPast, isCurrent } = getSessionMoment(session);
+    const isTrial = session.type === "FREE_TRIAL";
+    const derivedStatus = deriveBookingStatus({
+      status: session.status,
+      date: session.sessionDate,
+      start: session.startTime,
+      end: session.endTime,
+      interactionData: session.interactionData,
+      isKidWaiting: session.isKidWaiting,
+      isTeacherInClass: session.isTeacherInClass,
+    });
+
+    if (isPast) {
+      switch (derivedStatus) {
+        case "COMPLETED":
+        case "LATE":
+          return {
+            bg: "rgba(16,185,129,0.12)",
+            border: "2px solid #10b981",
+            borderLeft: "#10b981",
+            text: "#065f46",
+            badge: derivedStatus === "LATE" ? "Terminé" : "Terminé",
+          };
+        case "MISSING":
+        case "TEACHER_ABSENT":
+          return {
+            bg: "rgba(239,68,68,0.08)",
+            border: "2px solid #ef4444",
+            borderLeft: "#ef4444",
+            text: "#991b1b",
+            badge:
+              derivedStatus === "TEACHER_ABSENT" ? "Prof absent" : "Manqué",
+          };
+        case "REPORTED":
+        case "CANCELLED":
+          return {
+            bg: "rgba(100,116,139,0.1)",
+            border: "2px solid #64748b",
+            borderLeft: "#64748b",
+            text: "#334155",
+            badge: derivedStatus === "REPORTED" ? "Reporté" : "Annulé",
+          };
+        default:
+          return {
+            bg: "rgba(100,116,139,0.1)",
+            border: "2px solid #64748b",
+            borderLeft: "#64748b",
+            text: "#334155",
+            badge: "Passé",
+          };
+      }
+    }
+
+    if (isCurrent) {
+      return {
+        bg: isTrial ? "rgba(255,183,3,0.12)" : "rgba(33,158,188,0.12)",
+        border: isTrial
+          ? "2px solid #FB8500"
+          : "2px solid #219EBC",
+        borderLeft: isTrial ? "#FB8500" : "#219EBC",
+        text: isTrial ? "#995C00" : "#023047",
+        badge: "En cours",
+      };
+    }
+
+    return {
+      bg: isTrial ? "rgba(255,183,3,0.12)" : "rgba(33,158,188,0.12)",
+      border: isTrial
+        ? "2px solid #FB8500"
+        : "2px solid #219EBC",
+      borderLeft: isTrial ? "#FB8500" : "#219EBC",
+      text: isTrial ? "#995C00" : "#023047",
+      badge: isTrial ? "Essai" : "À venir",
+    };
+  };
+
   const getSlotContent = (day: Date, hour: number, minute: string) => {
     const timeStr = `${hour.toString().padStart(2, "0")}:${minute}:00`;
     const session = sessions.find(
@@ -77,7 +167,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   className={`p-3 text-center border-r border-slate-100 last:border-r-0 transition-colors ${
                     editMode ? "cursor-pointer hover:bg-amber-50/40" : ""
                   }`}
-                  style={isToday ? { background: "rgba(33,158,188,0.03)" } : {}}
+                  style={
+                    isToday
+                      ? {
+                          background:
+                            "linear-gradient(180deg, rgba(33,158,188,0.16) 0%, rgba(33,158,188,0.08) 100%)",
+                          boxShadow: "inset 0 0 0 2px rgba(33,158,188,0.24)",
+                        }
+                      : {}
+                  }
                   onClick={() => editMode && toggleDay(day)}
                   title={
                     editMode
@@ -95,11 +193,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </p>
                   <div className="flex items-center justify-center gap-1.5 mb-1">
                     <p
-                      className="text-xl font-black leading-none"
+                      className="text-xl font-black leading-none min-w-9 h-9 rounded-xl flex items-center justify-center"
                       style={{
-                        color: isToday
+                        color: isToday ? "white" : "var(--color-navy)",
+                        background: isToday
                           ? "var(--color-blue)"
-                          : "var(--color-navy)",
+                          : "transparent",
+                        boxShadow: isToday
+                          ? "0 8px 18px rgba(33,158,188,0.22)"
+                          : "none",
                       }}
                     >
                       {format(day, "dd")}
@@ -142,7 +244,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   )}
                   {isToday && (
                     <div
-                      className="w-4 h-0.5 rounded-full mx-auto mt-1"
+                      className="w-10 h-1 rounded-full mx-auto mt-1"
                       style={{ background: "var(--color-blue)" }}
                     />
                   )}
@@ -176,7 +278,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     style={{
                       minHeight: "76px",
                       background: isToday
-                        ? "rgba(33,158,188,0.015)"
+                        ? "rgba(33,158,188,0.05)"
                         : undefined,
                     }}
                   >
@@ -211,24 +313,27 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                       if (isBooked) {
                         const session = content!.data as Session;
-                        const isTrial = session.type === "FREE_TRIAL";
+                        const colors = getStatusColors(session);
+
                         return (
                           <button
                             key={min}
-                            onClick={() =>
-                              !editMode && setSelectedSession(session)
-                            }
+                            onClick={() => {
+                              if (!editMode) {
+                                if (isJoinable(session)) {
+                                  onEnterClassroom(session);
+                                } else {
+                                  setSelectedSession(session);
+                                }
+                              }
+                            }}
                             className="flex-1 p-2 rounded-xl text-left transition-all hover:brightness-[0.98] active:scale-[0.98] group relative overflow-hidden"
                             style={{
                               minHeight: "44px",
-                              background: isTrial
-                                ? "rgba(255,183,3,0.12)"
-                                : "rgba(33,158,188,0.12)",
-                              border: isTrial
-                                ? "1.5px solid rgba(255,183,3,0.4)"
-                                : "1.5px solid rgba(33,158,188,0.4)",
+                              background: colors.bg,
+                              border: colors.border,
                               borderLeftWidth: "4px",
-                              borderLeftColor: isTrial ? "#FB8500" : "#219EBC",
+                              borderLeftColor: colors.borderLeft,
                               cursor: editMode ? "not-allowed" : "pointer",
                               opacity: editMode ? 0.7 : 1,
                             }}
@@ -238,28 +343,34 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                 <p
                                   className="text-[12px] font-black truncate leading-tight uppercase tracking-tight"
                                   style={{
-                                    color: isTrial ? "#995C00" : "#023047",
+                                    color: colors.text,
                                   }}
                                 >
                                   {session.kid.name}
                                 </p>
-                                <span
-                                  className="text-[9px] font-black opacity-60 shrink-0"
-                                  style={{
-                                    color: isTrial ? "#995C00" : "#023047",
-                                  }}
-                                >
-                                  {min}:00
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {isJoinable(session) && (
+                                    <Video
+                                      className="w-3 h-3 text-white animate-pulse"
+                                      style={{ color: colors.borderLeft }}
+                                    />
+                                  )}
+                                  <span
+                                    className="text-[9px] font-black opacity-60 shrink-0"
+                                    style={{
+                                      color: colors.text,
+                                    }}
+                                  >
+                                    {min}:00
+                                  </span>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span
                                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase"
                                   style={{
-                                    background: isTrial
-                                      ? "rgba(251,133,0,0.15)"
-                                      : "rgba(33,158,188,0.15)",
-                                    color: isTrial ? "#FB8500" : "#219EBC",
+                                    background: colors.bg,
+                                    color: colors.borderLeft,
                                   }}
                                 >
                                   {session.kid.level}
@@ -267,10 +378,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                 <span
                                   className="text-[10px] font-bold italic opacity-70"
                                   style={{
-                                    color: isTrial ? "#995C00" : "#023047",
+                                    color: colors.text,
                                   }}
                                 >
                                   {session.kid.age} ans
+                                </span>
+                                <span
+                                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wide"
+                                  style={{
+                                    background: "rgba(255,255,255,0.65)",
+                                    color: colors.borderLeft,
+                                  }}
+                                >
+                                  {colors.badge}
                                 </span>
                               </div>
                             </div>

@@ -1,0 +1,75 @@
+import type { KidLessonActivityPack } from "../../../kidLessonActivities";
+
+export const level0Unit1Lesson1Pack: KidLessonActivityPack = {
+  level: "L0",
+  unit: 1,
+  lesson: 1,
+  title: "My Favorite Toys",
+  subtitle: "It's a...",
+  sentencePattern: "It's {word}.",
+  keywords: [
+    {
+      id: "ball",
+      word: "a ball",
+      imageName: "toys/ball.png",
+      color: "linear-gradient(135deg, #FFD84D 0%, #FFB703 100%)",
+      shadow: "rgba(255, 183, 3, 0.35)",
+    },
+    {
+      id: "bike",
+      word: "a bike",
+      imageName: "toys/bike.png",
+      color: "linear-gradient(135deg, #80EDFF 0%, #219EBC 100%)",
+      shadow: "rgba(33, 158, 188, 0.28)",
+    },
+    {
+      id: "car",
+      word: "a car",
+      imageName: "toys/car.png",
+      color: "linear-gradient(135deg, #FF9F7A 0%, #F77F00 100%)",
+      shadow: "rgba(247, 127, 0, 0.28)",
+    },
+    {
+      id: "doll",
+      word: "a doll",
+      imageName: "toys/doll.png",
+      color: "linear-gradient(135deg, #FFB5D8 0%, #FF7EB6 100%)",
+      shadow: "rgba(255, 126, 182, 0.28)",
+    },
+    {
+      id: "train",
+      word: "a train",
+      imageName: "toys/train.png",
+      color: "linear-gradient(135deg, #A4F28D 0%, #55A630 100%)",
+      shadow: "rgba(85, 166, 48, 0.28)",
+    },
+    {
+      id: "toy-truck",
+      word: "a truck",
+      imageName: "toys/truck.png",
+      color: "linear-gradient(135deg, #B392F0 0%, #6D28D9 100%)",
+      shadow: "rgba(109, 40, 217, 0.28)",
+    },
+    {
+      id: "toy-plane",
+      word: "a plane",
+      imageName: "toys/plane.png",
+      color: "linear-gradient(135deg, #7DD3FC 0%, #0EA5E9 100%)",
+      shadow: "rgba(14, 165, 233, 0.28)",
+    },
+    {
+      id: "toy-guitar",
+      word: "a guitar",
+      imageName: "toys/guitar.png",
+      color: "linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)",
+      shadow: "rgba(239, 68, 68, 0.28)",
+    },
+    {
+      id: "toy-piano",
+      word: "a piano",
+      imageName: "toys/piano.png",
+      color: "linear-gradient(135deg, #9CA3AF 0%, #111827 100%)",
+      shadow: "rgba(17, 24, 39, 0.28)",
+    },
+  ],
+};
