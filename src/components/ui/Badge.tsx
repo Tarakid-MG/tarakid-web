@@ -7,12 +7,17 @@ type BadgeVariant =
   | "orange"
   | "yellow"
   | "teal"
-  | "success";
+  | "success"
+  | "activeGreen"
+  | "inactiveRed";
+
+type BadgeSize = "md" | "sm";
 
 interface BadgeProps {
   children: React.ReactNode;
   className?: string;
   variant?: BadgeVariant;
+  size?: BadgeSize;
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
@@ -30,16 +35,27 @@ const variantClasses: Record<BadgeVariant, string> = {
     "border-2 border-white bg-turquoise/12 text-teal shadow-sm",
   success:
     "border border-[#7AE582]/50 bg-[#E9FFEF] text-[#2B9348] shadow-sm",
+  activeGreen: "bg-green-100 text-green-600",
+  inactiveRed: "bg-red-100 text-red-600",
+};
+
+// Compact pill sizing used by admin status badges (e.g. Actif/Inactif),
+// distinct from the larger kid/parent-mode pills that use the "md" default.
+const sizeClasses: Record<BadgeSize, string> = {
+  md: "gap-2 rounded-full px-4 py-1.5 text-[11px] tracking-[0.18em]",
+  sm: "gap-1 rounded-lg px-2 py-0.5 text-[9px] tracking-wider",
 };
 
 export const Badge: React.FC<BadgeProps> = ({
   children,
   className = "",
   variant = "default",
+  size = "md",
 }) => (
   <div
     className={[
-      "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em]",
+      "inline-flex items-center font-black uppercase",
+      sizeClasses[size],
       variantClasses[variant],
       className,
     ].join(" ")}

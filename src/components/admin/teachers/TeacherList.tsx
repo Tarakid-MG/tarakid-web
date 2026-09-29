@@ -9,6 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import { type User } from "./TeacherTypes";
+import { Badge } from "../../ui/Badge";
 import { parseISO, format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 
@@ -104,15 +105,9 @@ export const TeacherList: React.FC<TeacherListProps> = ({
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Status Badge */}
-            <div
-              className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${
-                t.isActive
-                  ? "bg-green-100 text-green-600"
-                  : "bg-red-100 text-red-600"
-              }`}
-            >
+            <Badge size="sm" variant={t.isActive ? "activeGreen" : "inactiveRed"}>
               {t.isActive ? "Actif" : "Inactif"}
-            </div>
+            </Badge>
 
             <div className="flex items-center gap-1 ml-2">
               <button

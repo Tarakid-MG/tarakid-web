@@ -9,6 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import { type User } from "../../../services/admin.service";
+import { Badge } from "../../ui/Badge";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 
@@ -80,11 +81,9 @@ export const ClientList: React.FC<ClientListProps> = ({
                   <h3 className="font-black text-navy truncate">
                     {c.firstName} {c.lastName}
                   </h3>
-                  <div
-                    className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${c.isActive ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
-                  >
+                  <Badge size="sm" variant={c.isActive ? "activeGreen" : "inactiveRed"}>
                     {c.isActive ? "Actif" : "Inactif"}
-                  </div>
+                  </Badge>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-1.5">

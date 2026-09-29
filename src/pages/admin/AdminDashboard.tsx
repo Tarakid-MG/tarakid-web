@@ -13,6 +13,7 @@ import {
   type AssignedBooking,
 } from "../../services/admin.service";
 import AdminLayout from "./AdminLayout";
+import { Card } from "../../components/ui/Card";
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -148,7 +149,7 @@ const AdminDashboard: React.FC = () => {
               <Clock className="w-5 h-5 text-orange" />
               Créneaux sans professeur
             </h2>
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -203,7 +204,7 @@ const AdminDashboard: React.FC = () => {
                   </button>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         )}
       </div>
